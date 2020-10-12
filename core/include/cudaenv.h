@@ -3,6 +3,8 @@
 #include <stdexcept>
 #include <sstream>
 
+#include "core.h"
+
 inline void throwError(const std::string message,
 	const char* fileName,
 	const std::size_t lineNumber)
@@ -22,18 +24,11 @@ private:
 	int activeDevice = 0;
 
 public:
-	CUDAEnv() {
-		checkCuda(cudaGetDeviceCount(&deviceCount));
-		check(deviceCount > 0, "No devices");
-		deviceProps.resize(deviceCount);
-		for (int i = 0; i < deviceCount; i++)
-			checkCuda(cudaGetDeviceProperties(&deviceProps[i], i));
-		cudaSetDevice(activeDevice);
-	}
+	EXPORT CUDAEnv();
 };
 
 struct CUDAMemDeleter {
-	void operator()(void* ptr) { checkCuda(cudaFree(ptr)); }
+	 void EXPORT operator()(void* ptr);
 };
 
 class CUDAImage {
@@ -42,23 +37,8 @@ private:
 	int width = -1, height = -1;
 
 public:
-	CUDAImage(int width, int height) : width(width), height(height) {
-		init();
-	}
-	CUDAImage(const cv::Mat& hostImage)  {
-		width = hostImage.cols;
-		height = hostImage.rows;
-		init(hostImage.data);
-	}
+	CUDAImage(int width, int height);
 
 private:
-	void init(void* hostPtr = nullptr) {
-		void* devPtr;
-		size_t bytes = (size_t)width * height;
-		checkCuda(cudaMalloc(&devPtr, bytes));
-		devBuffer.reset(devPtr);
-		if (hostPtr != nullptr) {
-			checkCuda(cudaMemcpy(devPtr, hostPtr, bytes, cudaMemcpyKind::cudaMemcpyHostToDevice));
-		}
-	}
+	void init(void* hostPtr = nullptr);
 };
