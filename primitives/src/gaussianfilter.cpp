@@ -26,16 +26,18 @@ GaussianFilterBase::~GaussianFilterBase() {}
 
 GaussianFilter::GaussianFilter(int k, float sigma) : GaussianFilterBase(k, sigma) {}
 
-void GaussianFilter::applyOnImage(const cv::Mat& input, cv::Mat& output) {
+void GaussianFilter::apply(const cv::Mat& input, cv::Mat& output) {
 	assert(_size > 0);
 	const int width = input.cols;
 	const int height = input.rows;
 	const int k = _size / 2;
 
 	if (output.empty()) {
-		output = std::move(cv::Mat(height, width, input.type()));
+		output = cv::Mat(height, width, input.type());
 	}
-	initBuffers(width, height);
+	if (buffer.empty() || buffer.cols != width || buffer.rows != height) {
+		buffer = cv::Mat(height, width, CV_8UC1);
+	}
 
 	uchar* inputData = input.data;
 	uchar* outputData = buffer.data;
@@ -48,11 +50,10 @@ void GaussianFilter::applyOnImage(const cv::Mat& input, cv::Mat& output) {
 		for (int x = 0; x < width; x++) {
 			float sum = 0;
 			for (int i = -k; i <= k; i++) {
-				int xx = wrapMirror(x, width);
-				sum += _kernel[(size_t)i + k] * inputData[OFFSET(xx, y)];
+				int xx = BORDER_MIRROR(x + i, width);
+				sum += _kernel[i + k] * inputData[OFFSET(xx, y)];
 			}
-			uchar value = (uchar)sum;
-			outputData[OFFSET(x, y)] = value > 255 ? 255 : value;
+			outputData[OFFSET(x, y)] = (uchar)CLAMP(sum, 0, 255);
 		}
 	}
 
@@ -67,17 +68,10 @@ void GaussianFilter::applyOnImage(const cv::Mat& input, cv::Mat& output) {
 		for (int y = 0; y < height; y++) {
 			float sum = 0;
 			for (int i = -k; i <= k; i++) {
-				int yy = wrapMirror(y, height);
-				sum += _kernel[(size_t)i + k] * inputData[OFFSET(x, yy)];
+				int yy = BORDER_MIRROR(y + i, height);
+				sum += _kernel[i + k] * inputData[OFFSET(x, yy)];
 			}
-			uchar value = (uchar)sum;
-			outputData[OFFSET(x, y)] = value > 255 ? 255 : value;
+			outputData[OFFSET(x, y)] = (uchar)CLAMP(sum, 0, 255);
 		}
-	}
-}
-
-void GaussianFilter::initBuffers(int width, int height) {
-	if (buffer.empty()) {
-		buffer = cv::Mat(height, width, CV_8UC1);
 	}
 }

@@ -2,43 +2,62 @@
 
 #include "core.h"
 
-#define OFFSET(x, y) OFFSET_ROW_MAJOR(x, y, width)
+#define OFFSET(x, y) OFFSET_ROW_MAJOR(x, y, width, 1)
+#define OFFSET_OUT(x, y) OFFSET_ROW_MAJOR(x, y, width, 2)
 
-void Gradient::applyOnImage(const cv::Mat& input, cv::Mat& output) {
+void Gradient::apply(const cv::Mat& input, cv::Mat& output) {
+
+	// Sobel operators derivative 1
+	const int kY[3] = { -1, 0, 1 };
+	const int kX[3] = { 1, 2, 1 };
+
 	int width = input.cols;
 	int height = input.rows;
 	const uchar* const inputData = input.data;
 
 	if (output.empty()) {
-		output = std::move(cv::Mat(width, height, input.type()));
+		output = std::move(cv::Mat(height, width, CV_32FC2));
 	}
-	if (gradients.empty()) {
-		gradients = std::move(cv::Mat(width, height, CV_32FC1));
+
+	if (bufferX.empty() || bufferY.empty() || bufferX.cols != width || bufferX.rows != height) {
+		bufferX = cv::Mat(height, width, CV_32SC1);
+		bufferY = cv::Mat(height, width, CV_32SC1);
 	}
-	float* const gradDataPtr = (float*)gradients.data;
 
-	for (int y = 1; y < height - 1; y++) {
-		for (int x = 1; x < width - 1; x++) {
-			int gX = _kernelX[AT(0, 0)] * inputData[OFFSET(x - 1, y - 1)] + _kernelX[AT(0, 1)] * inputData[OFFSET(x - 1, y)] + _kernelX[AT(0, 2)] * inputData[OFFSET(x - 1, y + 1)] +
-				_kernelX[AT(1, 0)] * inputData[OFFSET(x, y - 1)] + _kernelX[AT(1, 1)] * inputData[OFFSET(x, y)] + _kernelX[AT(1, 2)] * inputData[OFFSET(x + 1, y + 1)] +
-				_kernelX[AT(2, 0)] * inputData[OFFSET(x + 1, y - 1)] + _kernelX[AT(2, 1)] * inputData[OFFSET(x + 1, y)] + _kernelX[AT(2, 2)] * inputData[OFFSET(x + 1, y + 1)];
+	float* const gradientData = (float*)output.data;
+	int* hX = (int*)bufferX.data;
+	int* hY = (int*)bufferY.data;
 
-			int gY = _kernelY[AT(0, 0)] * inputData[OFFSET(x - 1, y - 1)] + _kernelY[AT(0, 1)] * inputData[OFFSET(x - 1, y)] + _kernelY[AT(0, 2)] * inputData[OFFSET(x - 1, y + 1)] +
-				_kernelY[AT(1, 0)] * inputData[OFFSET(x, y - 1)] + _kernelY[AT(1, 1)] * inputData[OFFSET(x, y)] + _kernelY[AT(1, 2)] * inputData[OFFSET(x + 1, y + 1)] +
-				_kernelY[AT(2, 0)] * inputData[OFFSET(x + 1, y - 1)] + _kernelY[AT(2, 1)] * inputData[OFFSET(x + 1, y)] + _kernelY[AT(2, 2)] * inputData[OFFSET(x + 1, y + 1)];
-			
-			double mag = std::hypot(gX, gY);
-			output.data[OFFSET(x, y)] = mag > 255.f ? 255 : (uchar)mag;
+	// horizontal pass
+#ifdef _MSC_VER 
+#pragma loop(hint_parallel(4))
+#endif
+	for (int y = 0; y < height; y++) {
+		for (int x = 0; x < width; x++) {
+			int leftIdx = OFFSET(BORDER_MIRROR(x - 1, width), y);
+			int midIdx = OFFSET(x, y);
+			int rightIdx = OFFSET(BORDER_MIRROR(x + 1, width), y);
 
-			float deg = (float)((atan2(gX, gY) / M_PI) * 180.f);
-			deg = deg < 0 ? deg + 180 : deg;
-			int degX2 = (int)(deg * 2);
-			float grad;
-			if (degX2 <= 45 || degX2 > 315) grad = 0.f;
-			else if (degX2 > 45 && degX2 <= 135) grad = 45.f;
-			else if (degX2 > 135 && degX2 <= 225) grad = 90.f;
-			else grad = 135.f;
-			gradDataPtr[OFFSET(x, y)] = grad;
+			hX[OFFSET(x, y)] = kX[0] * inputData[leftIdx] + kX[1] * inputData[midIdx] + kX[2] * inputData[rightIdx];
+			hY[OFFSET(x, y)] = kY[0] * inputData[leftIdx] + kY[1] * inputData[midIdx] + kY[2] * inputData[rightIdx];
+		}
+	}
+
+	// vertical pass
+#ifdef _MSC_VER 
+#pragma loop(hint_parallel(4))
+#endif
+	for (int x = 0; x < width; x++) {
+		for (int y = 0; y < height; y++) {
+			int upIdx = OFFSET(x, BORDER_MIRROR(y - 1, height));
+			int midIdx = OFFSET(x, y);
+			int downIdx = OFFSET(x, BORDER_MIRROR(y + 1, height));
+
+			int gX = kY[0] * hX[upIdx] + kY[1] * hX[midIdx] + kY[2] * hX[downIdx];
+			int gY = kX[0] * hY[upIdx] + kX[1] * hY[midIdx] + kX[2] * hY[downIdx];
+
+			gradientData[OFFSET_OUT(x, y) + 0] = (float)hypot(gX, gY);
+			gradientData[OFFSET_OUT(x, y) + 1] = (float)atan2(gY, gX);
 		}
 	}
 }

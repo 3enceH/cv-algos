@@ -18,9 +18,11 @@ public:
         ConnectedComponentLabeling cclabeling;
         cv::Mat black(height, width, CV_32FC1, cv::Scalar(0));
         cv::Mat blackOut(height, width, CV_32SC1);
-        cclabeling.applyOnImage(black, blackOut);
+        cclabeling.apply(black, blackOut);
 
-        EXPECT_TRUE(std::all_of(blackOut.begin<int>(), blackOut.end<int>(), [=](int val) { return val == 0; } ));
+        int diff = (int)cv::sum(blackOut)[0];
+
+        EXPECT_TRUE(diff == 0);
 
         std::default_random_engine gen;
         std::uniform_int_distribution<int> distX(0, width - 1);
@@ -43,13 +45,14 @@ public:
             }
         }
 
-        cclabeling.applyOnImage(blobs, blobsOut);
+        cclabeling.apply(blobs, blobsOut);
         const float* const values = (float*)blobs.data;
         const int* const labels = (int*)blobsOut.data;
 
         // debug
         cv::Mat colored;
         labelsToColored(blobsOut, colored);
+
         cv::Mat r, g, b;
         splitChannels(colored, r, g, b);
 

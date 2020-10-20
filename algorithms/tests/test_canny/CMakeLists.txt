@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.5)
 
-set(TEST_NAME "sobelfilter")
+set(TEST_NAME canny)
 set(PROJECT_NAME "test_${TEST_NAME}")
 
 project(${PROJECT_NAME} LANGUAGES CXX CUDA)

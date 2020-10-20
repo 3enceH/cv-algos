@@ -6,6 +6,8 @@
 #include "primitives.h"
 #include "debug.h"
 
+#include "img.h"
+
 template<class T>
 std::ostream& operator <<(std::ostream& s, const std::vector<T>& v) {
     s << "(";
@@ -18,7 +20,7 @@ std::ostream& operator <<(std::ostream& s, const std::vector<T>& v) {
 }
 
 std::unique_ptr<GaussianFilterCUDA> gaussFilter;
-std::unique_ptr<SobelFilter> sobelFilter;
+std::unique_ptr<Gradient> sobelFilter;
 std::unique_ptr<NonMaxSupress> nonMaxSupressor;
 std::unique_ptr<DoubleThreshold> doubleThresholder;
 std::unique_ptr<ConnectedComponentLabeling> conComLab;
@@ -35,7 +37,7 @@ int main(int arc, char** argc)
 {
     try {
         gaussFilter = std::make_unique<GaussianFilterCUDA>(7, 1.5f);
-        sobelFilter = std::make_unique<SobelFilter>();
+        sobelFilter = std::make_unique<Gradient>();
         nonMaxSupressor = std::make_unique<NonMaxSupress>();
         doubleThresholder = std::make_unique<DoubleThreshold>(100.f, 50.f);
         conComLab = std::make_unique<ConnectedComponentLabeling>();
@@ -66,6 +68,13 @@ void image() {
     int width = colorFrame.cols;
     int height = colorFrame.rows;
     greyFrameInput = cv::Mat(width, height, CV_8UC1);
+
+    Img img(512, 256, ImgType::UInt8, 3);
+    Img img2(512, 256, ImgType::Float32, 3);
+    Img img3(greyFrameInput.data, width, height,ImgType::UInt8);
+    std::cout << img << std::endl;
+    std::cout << img2 << std::endl;
+    std::cout << img3 << std::endl;
 
     cv::cvtColor(colorFrame, greyFrameInput, cv::COLOR_RGB2GRAY);
 
@@ -114,23 +123,23 @@ void calculate() {
     timer.start();
 
     cv::Mat blurred;
-    gaussFilter->applyOnImage(greyFrameInput, blurred);
+    gaussFilter->apply(greyFrameInput, blurred);
     timer.tag("gauss");
 
     cv::Mat gradients;
-    sobelFilter->applyOnImage(blurred, gradients);
+    sobelFilter->apply(blurred, gradients);
     timer.tag("sobel");
 
     cv::Mat gradientsFiltered;
-    nonMaxSupressor->applyOnImage(gradients, gradientsFiltered);
+    nonMaxSupressor->apply(gradients, gradientsFiltered);
     timer.tag("nonmax");
 
     cv::Mat thresholded;
-    doubleThresholder->applyOnImage(gradientsFiltered, thresholded);
+    doubleThresholder->apply(gradientsFiltered, thresholded);
     timer.tag("threshold");
 
     cv::Mat labels;
-    conComLab->applyOnImage(thresholded, labels);
+    conComLab->apply(thresholded, labels);
     timer.tag("CCL");
     std::cout << timer.summary() << std::endl;
 

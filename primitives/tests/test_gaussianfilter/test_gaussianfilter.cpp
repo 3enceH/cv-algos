@@ -26,26 +26,15 @@ public:
 
         cv::Mat black(height, width, CV_8UC1, cv::Scalar(0));
         cv::Mat blackOut(height, width, CV_8UC1);
-        filter.applyOnImage(black, blackOut);
+        filter.apply(black, blackOut);
 
         EXPECT_TRUE(std::equal(black.begin<uchar>(), black.end<uchar>(), blackOut.begin<uchar>()));
 
         cv::Mat grey(height, width, CV_8UC1, cv::Scalar(128));
         cv::Mat greyOut(height, width, CV_8UC1);
-        filter.applyOnImage(grey, greyOut);
+        filter.apply(grey, greyOut);
 
         EXPECT_TRUE(std::equal(grey.begin<uchar>(), grey.end<uchar>(), greyOut.begin<uchar>()));
-
-        cv::Mat squares(height, width, CV_8UC1);
-        cv::Mat squaresOut(height, width, CV_8UC1);
-        for (int y = 0; y < height; y++) {
-            for (int x = 0; x < width; x++) {
-                uchar value = ((x / 4 + y / 4) % 2 == 0) ? 255 : 0;
-                squares.data[y * width + x] = value;
-            }
-        }
-
-        filter.applyOnImage(squares, squaresOut);
     }
 };
 
@@ -61,21 +50,31 @@ public:
             }
         }
 
-        cv::Mat squares1(height, width, CV_8UC1);
-        cv::Mat squares2(height, width, CV_8UC1);
+        cv::Mat out1(height, width, CV_8UC1);
+        cv::Mat out2(height, width, CV_8UC1);
 
         GaussianFilter cpuFilter(k, sigma);
-        cpuFilter.applyOnImage(squares, squares1);
+        cpuFilter.apply(squares, out1);
 
         GaussianFilterCUDA gpuFilter(k, sigma);
-        gpuFilter.applyOnImage(squares, squares2);
+        gpuFilter.apply(squares, out2);
 
-       
+        cv::Mat diffImg;
+        cv::absdiff(out1, out2, diffImg);
+
+        double diffPerPix = cv::sum(diffImg)[0] / ((double)width * height);
+        EXPECT_TRUE(diffPerPix < 1.f);
+
+        int maxDiff = 0;
         int epsilon = 3;
-        int diff = std::accumulate(squares1.begin<uchar>(), squares1.end<uchar>(), 0) - std::accumulate(squares2.begin<uchar>(), squares2.end<uchar>(), 0);
-        float diffPerPix = diff / ((double)height * width);
-        bool equals = std::equal(squares1.begin<uchar>(), squares1.end<uchar>(), squares2.begin<uchar>(), [=](uchar a, uchar b) { return a > b ? a - b < epsilon : b - a < epsilon; });
+        bool equals = std::all_of(diffImg.begin<uchar>(), diffImg.end<uchar>(), [&](uchar val) {
+            if (val > maxDiff) {
+                maxDiff = val;
+            }
+            return val < epsilon;
+            });
         EXPECT_TRUE(equals);
+        std::cout << "diffPerPix " << std::setw(10) << std::setprecision(5) << diffPerPix << " maxDiff " << std::setw(5) << maxDiff << std::endl;
     }
 };
 
@@ -98,19 +97,24 @@ public:
         cv::GaussianBlur(squares, out1, cv::Size(2 * k + 1, 2 * k + 1), sigma);
 
         GaussianFilterCUDA gpuFilter1(k, sigma);
-        gpuFilter1.applyOnImage(squares, out2);
+        gpuFilter1.apply(squares, out2);
 
-        int epsilon = 3;
-        int diff = std::accumulate(out1.begin<uchar>(), out1.end<uchar>(), 0) - std::accumulate(out2.begin<uchar>(), out2.end<uchar>(), 0);
-        float diffPerPix = diff / ((double)width * height);
-        EXPECT_TRUE(diffPerPix < 1.f);
+        cv::Mat diffImg;
+        cv::absdiff(out1, out2, diffImg);
+
+        double diffPerPix = cv::sum(diffImg)[0] / ((double)width * height);
+        EXPECT_TRUE(diffPerPix < 2.f);
+
         int maxDiff = 0;
-        bool equals = std::equal(out1.begin<uchar>(), out1.end<uchar>(), out2.begin<uchar>(), [&](uchar a, uchar b) {
-            int diff = a > b ? a - b : b - a;
-            if (diff > maxDiff) maxDiff = diff;
-            return diff < epsilon;
+        int epsilon = 3;
+        bool equals = std::all_of(diffImg.begin<uchar>(), diffImg.end<uchar>(), [&](uchar val) {
+            if (val > maxDiff) {
+                maxDiff = val;
+            }
+            return val < epsilon;
             });
         EXPECT_TRUE(equals);
+        std::cout << "diffPerPix " << std::setw(10) << std::setprecision(5) << diffPerPix << " maxDiff " << std::setw(5) << maxDiff << std::endl;
     }
 
     void picture(int k, float sigma = 1.f) {
@@ -123,19 +127,27 @@ public:
         cv::GaussianBlur(pic, out1, cv::Size(2 * k + 1, 2 * k + 1), sigma);
 
         GaussianFilterCUDA gpuFilter1(k, sigma);
-        gpuFilter1.applyOnImage(pic, out2);
+        gpuFilter1.apply(pic, out2);
 
-        int epsilon = 4;
-        int diff = std::accumulate(out1.begin<uchar>(), out1.end<uchar>(), 0) - std::accumulate(out2.begin<uchar>(), out2.end<uchar>(), 0);
-        float diffPerPix = diff / ((double)pic.cols * pic.rows);
+        cv::Mat diffImg;
+        cv::absdiff(out1, out2, diffImg);
+
+        int width = pic.cols;
+        int height = pic.rows;
+
+        double diffPerPix = cv::sum(diffImg)[0] / ((double)width * height);
         EXPECT_TRUE(diffPerPix < 1.f);
+
         int maxDiff = 0;
-        bool equals = std::equal(out1.begin<uchar>(), out1.end<uchar>(), out2.begin<uchar>(), [&](uchar a, uchar b) {
-            int diff = a > b ? a - b : b - a;
-            if (diff > maxDiff) maxDiff = diff;
-            return diff < epsilon;
-        });
+        int epsilon = 30;
+        bool equals = std::all_of(diffImg.begin<uchar>(), diffImg.end<uchar>(), [&](uchar val) {
+            if (val > maxDiff) {
+                maxDiff = val;
+            }
+            return val < epsilon;
+            });
         EXPECT_TRUE(equals);
+        std::cout << "diffPerPix " << std::setw(10) << std::setprecision(5) << diffPerPix << " maxDiff " << std::setw(5) << maxDiff << std::endl;
     }
 };
 
@@ -145,9 +157,6 @@ TEST(GaussianFilterTest, Precomputed) {
     test(GaussianFilter(1), 4 * 4, 3 * 4);
     test(GaussianFilter(1, 1.f), 4 * 4, 3 * 4);
     test(GaussianFilter(2, 1.f), 4 * 4, 3 * 4);
-    //test(GaussianFilter(3, 1.f), 256, 256);
-    //test(GaussianFilter(5, 1.f), 1024, 1024);
-
 }
 
 TEST(GaussianFilterTest, CUDAComparison) {
@@ -162,5 +171,4 @@ TEST(GaussianFilterTest, OpenCVComparison) {
     test.generated(32, 32, 2, 1.f);
     test.generated(10 * 4 * 32, 10 * 4 * 32, 4, 1.f);
     test.picture(2);
-    //test.picture(2, 1.f);
 }

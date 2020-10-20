@@ -9,6 +9,7 @@ void PerformanceTimer::tag(const std::string& name) {
 }
 
 void PerformanceTimer::start() {
+    clear();
 	log[std::chrono::steady_clock::now()] = "start";
 }
 
@@ -21,8 +22,6 @@ std::string PerformanceTimer::summary() const {
 	}
 
 	std::ostringstream stream;
-
-
 
 	auto& cur = log.cbegin();
 	cur++;
@@ -93,14 +92,14 @@ void splitChannels(const cv::Mat* const multi, cv::Mat* ch1, cv::Mat* ch2, cv::M
             size_t multiIdx = OFFSET_ROW_MAJOR(x, y, width, channels) * elemSize;
             size_t singleIdx = OFFSET_ROW_MAJOR(x, y, width, 1) * elemSize;
 
-            memcpy(bytes.data(), &multi->data[multiIdx + 0], bytes.size());
+            memcpy(bytes.data(), &multi->data[multiIdx + 0 * elemSize], bytes.size());
             memcpy(&ch1->data[singleIdx], bytes.data(), bytes.size());
 
-            memcpy(bytes.data(), &multi->data[multiIdx + 1], bytes.size());
+            memcpy(bytes.data(), &multi->data[multiIdx + 1 * elemSize], bytes.size());
             memcpy(&ch2->data[singleIdx], bytes.data(), bytes.size());
 
             if (ch3 != nullptr) {
-                memcpy(bytes.data(), &multi->data[multiIdx + 2], bytes.size());
+                memcpy(bytes.data(), &multi->data[multiIdx + 2 * elemSize], bytes.size());
                 memcpy(&ch3->data[singleIdx], bytes.data(), bytes.size());
             }
         }
@@ -137,14 +136,14 @@ void joinChannels(cv::Mat* joined, const cv::Mat* ch1, const cv::Mat* ch2, const
             size_t singleIdx = OFFSET_ROW_MAJOR(x, y, width, 1) * elemSize;
             
             memcpy(bytes.data(), &ch1->data[singleIdx], bytes.size());
-            memcpy(&joined->data[multiIdx + 0], bytes.data(), bytes.size());
+            memcpy(&joined->data[multiIdx + 0 * elemSize], bytes.data(), bytes.size());
 
             memcpy(bytes.data(), &ch2->data[singleIdx], bytes.size());
-            memcpy(&joined->data[multiIdx + 1], bytes.data(), bytes.size());
+            memcpy(&joined->data[multiIdx + 1 * elemSize], bytes.data(), bytes.size());
 
             if (ch3 != nullptr) {
                 memcpy(bytes.data(), &ch3->data[singleIdx], bytes.size());
-                memcpy(&joined->data[multiIdx + 2], bytes.data(), bytes.size());
+                memcpy(&joined->data[multiIdx + 2 * elemSize], bytes.data(), bytes.size());
             }
         }
     }

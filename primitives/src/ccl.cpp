@@ -66,7 +66,7 @@ int getMinEquivalent(int label, std::map<int, std::vector<int>>& equivalentLabel
 	return getMinEquivalent(eqLabel, equivalentLabels);
 };
 
-void ConnectedComponentLabeling::applyOnImage(const cv::Mat& input, cv::Mat& output) {
+void ConnectedComponentLabeling::apply(const cv::Mat& input, cv::Mat& output) {
 	int width = input.cols;
 	int height = input.rows;
 	const float* const values = (float*)input.data;

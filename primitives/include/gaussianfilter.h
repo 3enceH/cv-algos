@@ -16,10 +16,7 @@ public:
 
 	const std::vector<float>& kernel() const { return _kernel; }
 
-	virtual void EXPORT applyOnImage(const cv::Mat& input, cv::Mat& output) = 0;
-
-protected:
-	virtual void initBuffers(int width, int height) = 0;
+	virtual void EXPORT apply(const cv::Mat& input, cv::Mat& output) = 0;
 };
 
 class GaussianFilter : public GaussianFilterBase {
@@ -30,8 +27,5 @@ public:
 	EXPORT GaussianFilter(int k, float sigma = 0.f);
 
 	// input, output: CV_8UC1
-	void EXPORT applyOnImage(const cv::Mat& input, cv::Mat& output) override;
-
-private:
-	void initBuffers(int width, int height) override;
+	void EXPORT apply(const cv::Mat& input, cv::Mat& output) override;
 };

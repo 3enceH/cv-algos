@@ -6,5 +6,5 @@
 class NonMaxSupress {
 public:
 	// input: CV_32FC2, output: CV_32FC1
-	void EXPORT applyOnImage(const cv::Mat& input, cv::Mat& output);
+	void EXPORT apply(const cv::Mat& input, cv::Mat& output);
 };

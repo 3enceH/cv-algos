@@ -9,8 +9,9 @@ private:
 	float highThreshold;
 
 public:
-	EXPORT DoubleThreshold(float highThreshold, float lowThreshold = NAN) : highThreshold(highThreshold), lowThreshold(lowThreshold){}
+	EXPORT DoubleThreshold(float highThreshold, float lowThreshold) : highThreshold(highThreshold), lowThreshold(lowThreshold){}
+	EXPORT DoubleThreshold(float threshold) : highThreshold(threshold), lowThreshold(threshold) {}
 
 	// input, output: CV_32FC1
-	void EXPORT applyOnImage(const cv::Mat& input, cv::Mat& output);
+	void EXPORT apply(const cv::Mat& input, cv::Mat& output);
 };

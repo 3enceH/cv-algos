@@ -9,8 +9,10 @@ find_package(CUDA 11.0 REQUIRED)
 
 add_library(${PROJECT_NAME} SHARED
     include/core.h
+    include/img.h
     include/cudaenv.h
 
+    src/img.cpp
     src/cudaenv.cpp
 )
 

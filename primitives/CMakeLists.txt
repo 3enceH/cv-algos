@@ -12,7 +12,7 @@ add_library(${PROJECT_NAME} SHARED
     include/debug.h
     include/gaussianfilter.h
     include/cuda_gaussianfilter.cuh
-    include/sobelfilter.h
+    include/gradient.h
     include/nonmaxsupress.h
     include/doublethreshold.h
     include/ccl.h
@@ -20,7 +20,7 @@ add_library(${PROJECT_NAME} SHARED
     src/debug.cpp
     src/gaussianfilter.cpp
     src/cuda_gaussianfilter.cu
-    src/sobelfilter.cpp
+    src/gradient.cpp
     src/nonmaxsupress.cpp
     src/doublethreshold.cpp
     src/ccl.cpp
