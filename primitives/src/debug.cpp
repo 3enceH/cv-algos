@@ -4,37 +4,37 @@
 #include <iomanip>
 
 void PerformanceTimer::tag(const std::string& name) {
-	auto now = std::chrono::steady_clock::now();
-	log[now] = name;
+    auto now = std::chrono::steady_clock::now();
+    log[now] = name;
 }
 
 void PerformanceTimer::start() {
     clear();
-	log[std::chrono::steady_clock::now()] = "start";
+    log[std::chrono::steady_clock::now()] = "start";
 }
 
 std::string PerformanceTimer::summary() const {
-	auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(log.crbegin()->first - log.cbegin()->first).count();
+    auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(log.crbegin()->first - log.cbegin()->first).count();
 
-	int strLengthMax = 0;
-	for (auto& it : log) {
-		if (it.second.length() > strLengthMax) strLengthMax = (int)it.second.length();
-	}
+    int strLengthMax = 0;
+    for (auto& it : log) {
+        if (it.second.length() > strLengthMax) strLengthMax = (int)it.second.length();
+    }
 
-	std::ostringstream stream;
+    std::ostringstream stream;
 
-	auto& cur = log.cbegin();
-	cur++;
-	auto& last = log.cbegin();
-	while (cur != log.cend()) {
-		auto diff = std::chrono::duration_cast<std::chrono::milliseconds>(cur->first - last->first).count();
-		float ratio = 100.f * diff / (float)elapsed;
-		stream << std::setw(strLengthMax) << std::left << cur->second << ": " << std::setw(8) << std::left << diff << "ms " << ratio << "%" << std::endl;
-		cur++;
-		last++;
-	}
-	stream << std::setw(strLengthMax) << std::left << "SUM" << ": " << std::setw(8) << std::left << elapsed << "ms " << 100 << "%" << std::endl;
-	return std::move(stream.str());
+    auto& cur = log.cbegin();
+    cur++;
+    auto& last = log.cbegin();
+    while (cur != log.cend()) {
+        auto diff = std::chrono::duration_cast<std::chrono::milliseconds>(cur->first - last->first).count();
+        float ratio = 100.f * diff / (float)elapsed;
+        stream << std::setw(strLengthMax) << std::left << cur->second << ": " << std::setw(8) << std::left << diff << "ms " << ratio << "%" << std::endl;
+        cur++;
+        last++;
+    }
+    stream << std::setw(strLengthMax) << std::left << "SUM" << ": " << std::setw(8) << std::left << elapsed << "ms " << 100 << "%" << std::endl;
+    return std::move(stream.str());
 }
 
 void labelsToColored(const cv::Mat& labeled, cv::Mat& colored) {

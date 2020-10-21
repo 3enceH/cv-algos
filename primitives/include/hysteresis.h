@@ -5,12 +5,12 @@
 
 class Hysteresis {
 private:
-	float weakValue;
-	float strongValue;
+    float weakValue;
+    float strongValue;
 
 public:
-	EXPORT Hysteresis(float weakValue, float strongValue) : weakValue(weakValue), strongValue(strongValue) {}
+    EXPORT Hysteresis(float weakValue, float strongValue) : weakValue(weakValue), strongValue(strongValue) {}
 
-	// input CV_32FC1, output CV_8UC1
-	void EXPORT apply(const cv::Mat& input, cv::Mat& output);
+    // input CV_32FC1, output CV_8UC1
+    void EXPORT apply(const cv::Mat& input, cv::Mat& output);
 };

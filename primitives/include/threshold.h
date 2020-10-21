@@ -5,13 +5,13 @@
 
 class Threshold {
 private:
-	float lowThreshold;
-	float highThreshold;
+    float lowThreshold;
+    float highThreshold;
 
 public:
-	EXPORT Threshold(float lowThreshold, float highThreshold) : lowThreshold(lowThreshold), highThreshold(highThreshold) {}
-	EXPORT Threshold(float threshold) : highThreshold(threshold), lowThreshold(threshold) {}
+    EXPORT Threshold(float lowThreshold, float highThreshold) : lowThreshold(lowThreshold), highThreshold(highThreshold) {}
+    EXPORT Threshold(float threshold) : highThreshold(threshold), lowThreshold(threshold) {}
 
-	// input, output: CV_32FC1
-	void EXPORT apply(const cv::Mat& input, cv::Mat& output);
+    // input, output: CV_32FC1
+    void EXPORT apply(const cv::Mat& input, cv::Mat& output);
 };
