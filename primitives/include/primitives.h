@@ -1,8 +1,9 @@
 #pragma once
 
-#include "gaussianfilter.h"
-#include "cuda_gaussianfilter.cuh"
+#include "gaussian.h"
+#include "cuda_gaussian.cuh"
 #include "gradient.h"
 #include "nonmaxsupress.h"
-#include "doublethreshold.h"
+#include "threshold.h"
 #include "ccl.h"
+#include "hysteresis.h"

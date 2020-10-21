@@ -12,10 +12,33 @@ int main(int argc, char** argv) {
     return RUN_ALL_TESTS();
 }
 
+cv::Mat generateBlobs(int width, int height) {
+    std::default_random_engine gen;
+    std::uniform_int_distribution<int> distX(0, width - 1);
+    std::uniform_int_distribution<int> distY(0, height - 1);
+    std::uniform_int_distribution<int> radius(std::min(width, height) / 20, std::min(width, height) / 4);
+
+    cv::Mat blobs(height, width, CV_32FC1, cv::Scalar(0));
+
+    for (int i = 1; i <= 10; i++) {
+        int cx = distX(gen);
+        int cy = distY(gen);
+        int r = radius(gen);
+        for (int y = 0; y < height; y++) {
+            for (int x = 0; x < width; x++) {
+                if (r > (int)std::hypot(cx - x, cy - y)) {
+                    ((float*)blobs.data)[y * width + x] = (float)10 * i;
+                }
+            }
+        }
+    }
+    return std::move(blobs);
+}
+
 class CCLabelingAlgorithmicTest {
 public:
     void operator()(int width, int height) {
-        ConnectedComponentLabeling cclabeling;
+        CCL cclabeling;
         cv::Mat black(height, width, CV_32FC1, cv::Scalar(0));
         cv::Mat blackOut(height, width, CV_32SC1);
         cclabeling.apply(black, blackOut);
@@ -24,27 +47,9 @@ public:
 
         EXPECT_TRUE(diff == 0);
 
-        std::default_random_engine gen;
-        std::uniform_int_distribution<int> distX(0, width - 1);
-        std::uniform_int_distribution<int> distY(0, height - 1);
-        std::uniform_int_distribution<int> radius(std::min(width, height) / 20, std::min(width, height) / 4);
-
-        cv::Mat blobs(height, width, CV_32FC1, cv::Scalar(0));
+        cv::Mat blobs = generateBlobs(width, height);
         cv::Mat blobsOut(height, width, CV_32SC1);
-
-        for (int i = 1; i <= 10; i++) {
-            int cx = distX(gen);
-            int cy = distY(gen);
-            int r = radius(gen);
-            for (int y = 0; y < height; y++) {
-                for (int x = 0; x < width; x++) {
-                    if( r > (int)std::hypot(cx -x, cy - y)) {
-                        ((float*)blobs.data)[y * width + x] = (float)10 * i;
-                    }
-                }
-            }
-        }
-
+        
         cclabeling.apply(blobs, blobsOut);
         const float* const values = (float*)blobs.data;
         const int* const labels = (int*)blobsOut.data;

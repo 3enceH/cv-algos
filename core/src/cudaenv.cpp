@@ -1,12 +1,13 @@
 #include "cudaenv.h"
+#include <iostream>
 
 CUDAEnv::CUDAEnv() {
-	checkCuda(cudaGetDeviceCount(&deviceCount));
-	check(deviceCount > 0, "No devices");
-	deviceProps.resize(deviceCount);
-	for (int i = 0; i < deviceCount; i++)
-		checkCuda(cudaGetDeviceProperties(&deviceProps[i], i));
-	cudaSetDevice(activeDevice);
+	checkCuda(cudaGetDeviceCount(&_deviceCount));
+	check(_deviceCount > 0, "No devices");
+	_deviceProps.resize(_deviceCount);
+	for (int i = 0; i < _deviceCount; i++)
+		checkCuda(cudaGetDeviceProperties(&_deviceProps[i], i));
+	cudaSetDevice(activeDeviceId);
 }
 
 void CUDAMemDeleter::operator()(void* ptr) {

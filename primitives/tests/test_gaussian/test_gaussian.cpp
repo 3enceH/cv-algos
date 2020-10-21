@@ -1,19 +1,27 @@
 #include <numeric>
 
 #include <gtest/gtest.h>
-#include "gaussianfilter.h"
-#include "cuda_gaussianfilter.cuh"
+#include "gaussian.h"
+#include "cuda_gaussian.cuh"
+#include "debug.h"
 #include <opencv2/highgui.hpp>
 #include <opencv2/imgproc.hpp>
 
+#define VERBOSE 1
+
 int main(int argc, char** argv) {
+
+#if VERBOSE
+    std::cout.setstate(std::ios_base::failbit);
+#endif
+
     ::testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();
 }
 
 class GaussianFilterAlgorithmicTest {
 public:
-    void operator()(GaussianFilter& filter, int width, int height) {
+    void operator()(Gaussian& filter, int width, int height) {
         // kernel initialized correctly ?
         auto& kernel = filter.kernel();
 
@@ -41,6 +49,7 @@ public:
 class GaussianFilterGPUComparisonTest {
 public:
     void operator()(int width, int height, int k, float sigma = 1.f) {
+        std::cout << "dims " << width << "x" << height << " k " << k << " sigma " << sigma << std::endl;
 
         cv::Mat squares(height, width, CV_8UC1);
         for (int y = 0; y < height; y++) {
@@ -53,11 +62,19 @@ public:
         cv::Mat out1(height, width, CV_8UC1);
         cv::Mat out2(height, width, CV_8UC1);
 
-        GaussianFilter cpuFilter(k, sigma);
-        cpuFilter.apply(squares, out1);
+        Gaussian cpuFilter(k, sigma);
+        GaussianCUDA gpuFilter(k, sigma);
 
-        GaussianFilterCUDA gpuFilter(k, sigma);
+        PerformanceTimer perfTimer;
+        perfTimer.start();
+        
+        cpuFilter.apply(squares, out1);
+        perfTimer.tag("cpu");
+        
         gpuFilter.apply(squares, out2);
+        perfTimer.tag("gpu");
+        
+        std::cout << perfTimer.summary();
 
         cv::Mat diffImg;
         cv::absdiff(out1, out2, diffImg);
@@ -75,6 +92,8 @@ public:
             });
         EXPECT_TRUE(equals);
         std::cout << "diffPerPix " << std::setw(10) << std::setprecision(5) << diffPerPix << " maxDiff " << std::setw(5) << maxDiff << std::endl;
+
+        std::cout << std::endl;
     }
 };
 
@@ -82,6 +101,7 @@ public:
 class GaussianFilterOpenCVComparisonTest {
 public:
     void generated(int width, int height, int k, float sigma = 1.f) {
+        std::cout << "dims " << width << "x" << height << " k " << k << " sigma " << sigma << std::endl;
 
         cv::Mat squares(height, width, CV_8UC1);
         for (int y = 0; y < height; y++) {
@@ -94,10 +114,19 @@ public:
         cv::Mat out1(height, width, CV_8UC1);
         cv::Mat out2(height, width, CV_8UC1);
 
-        cv::GaussianBlur(squares, out1, cv::Size(2 * k + 1, 2 * k + 1), sigma);
+        GaussianCUDA gpuFilter1(k, sigma);
 
-        GaussianFilterCUDA gpuFilter1(k, sigma);
+        PerformanceTimer perfTimer;
+        perfTimer.start();
+
+        cv::GaussianBlur(squares, out1, cv::Size(2 * k + 1, 2 * k + 1), sigma);
+        perfTimer.tag("opencv");
+        
         gpuFilter1.apply(squares, out2);
+        perfTimer.tag("gpu");
+
+        std::cout << perfTimer.summary();
+
 
         cv::Mat diffImg;
         cv::absdiff(out1, out2, diffImg);
@@ -115,25 +144,37 @@ public:
             });
         EXPECT_TRUE(equals);
         std::cout << "diffPerPix " << std::setw(10) << std::setprecision(5) << diffPerPix << " maxDiff " << std::setw(5) << maxDiff << std::endl;
+
+        std::cout << std::endl;
     }
 
-    void picture(int k, float sigma = 1.f) {
+    void picture(const std::string& name, int k, float sigma = 1.f) {
 
-        std::string filename = "c:\\Users\\Bence\\Downloads\\RbLtUqIP_o.jpg";
+        std::string filename = std::string(STR(DATA_ROOT)) + "/" + name;
         cv::Mat pic;
         cv::cvtColor(cv::imread(filename), pic, cv::COLOR_RGB2GRAY);
-        cv::Mat out1, out2;
-
-        cv::GaussianBlur(pic, out1, cv::Size(2 * k + 1, 2 * k + 1), sigma);
-
-        GaussianFilterCUDA gpuFilter1(k, sigma);
-        gpuFilter1.apply(pic, out2);
-
-        cv::Mat diffImg;
-        cv::absdiff(out1, out2, diffImg);
 
         int width = pic.cols;
         int height = pic.rows;
+        std::cout << "dims " << width << "x" << height << " k " << k << " sigma " << sigma << std::endl;
+
+        cv::Mat out1, out2;
+
+        GaussianCUDA gpuFilter1(k, sigma);
+
+        PerformanceTimer perfTimer;
+        perfTimer.start();
+
+        cv::GaussianBlur(pic, out1, cv::Size(2 * k + 1, 2 * k + 1), sigma);
+        perfTimer.tag("opencv");
+
+        gpuFilter1.apply(pic, out2);
+        perfTimer.tag("gpu");
+
+        std::cout << perfTimer.summary();
+
+        cv::Mat diffImg;
+        cv::absdiff(out1, out2, diffImg);
 
         double diffPerPix = cv::sum(diffImg)[0] / ((double)width * height);
         EXPECT_TRUE(diffPerPix < 1.f);
@@ -148,21 +189,23 @@ public:
             });
         EXPECT_TRUE(equals);
         std::cout << "diffPerPix " << std::setw(10) << std::setprecision(5) << diffPerPix << " maxDiff " << std::setw(5) << maxDiff << std::endl;
+
+        std::cout << std::endl;
     }
 };
 
 TEST(GaussianFilterTest, Precomputed) {
     GaussianFilterAlgorithmicTest test;
-    test(GaussianFilter(1), 4, 4);
-    test(GaussianFilter(1), 4 * 4, 3 * 4);
-    test(GaussianFilter(1, 1.f), 4 * 4, 3 * 4);
-    test(GaussianFilter(2, 1.f), 4 * 4, 3 * 4);
+    test(Gaussian(1), 4 * 4, 3 * 4);
+    test(Gaussian(1, 1.f), 4 * 4, 3 * 4);
+    test(Gaussian(2, 1.f), 4 * 4, 3 * 4);
 }
 
 TEST(GaussianFilterTest, CUDAComparison) {
     GaussianFilterGPUComparisonTest test;
     test(32, 32, 2, 1.f);
     test(10 * 4 * 32, 10 * 4 * 32, 4, 1.f);
+    test(1980, 1280, 4, 1.f);
     test(4096, 2160, 8, 1.f);
 }
 
@@ -170,5 +213,6 @@ TEST(GaussianFilterTest, OpenCVComparison) {
     GaussianFilterOpenCVComparisonTest test;
     test.generated(32, 32, 2, 1.f);
     test.generated(10 * 4 * 32, 10 * 4 * 32, 4, 1.f);
-    test.picture(2);
+    test.picture("samuraijack.jpg", 2);
+    test.picture("rihanna.jpg", 4);
 }

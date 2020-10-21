@@ -10,7 +10,7 @@ inline void throwError(const std::string message,
 	const std::size_t lineNumber)
 {
 	std::ostringstream stream;
-	stream << message << ", file " << fileName << " line " << lineNumber;
+	stream << message << ", file " << fileName << ", line " << lineNumber;
 	throw std::runtime_error(stream.str());
 }
 
@@ -19,12 +19,16 @@ inline void throwError(const std::string message,
 
 class CUDAEnv {
 private:
-	int deviceCount;
-	std::vector<cudaDeviceProp> deviceProps;
-	int activeDevice = 0;
+	int _deviceCount;
+	std::vector<cudaDeviceProp> _deviceProps;
+	int activeDeviceId = 0;
 
 public:
 	EXPORT CUDAEnv();
+
+	const cudaDeviceProp& currentDeviceProp() const { return  _deviceProps[activeDeviceId]; }
+	const std::vector<cudaDeviceProp>& deviceProps() const { return _deviceProps; }
+	int deviceCount() const { return _deviceCount; }
 };
 
 struct CUDAMemDeleter {

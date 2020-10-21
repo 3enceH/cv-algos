@@ -10,20 +10,22 @@ find_package(OpenCV 4.3.0 REQUIRED COMPONENTS core)
 add_library(${PROJECT_NAME} SHARED
     include/primitives.h
     include/debug.h
-    include/gaussianfilter.h
-    include/cuda_gaussianfilter.cuh
+    include/gaussian.h
+    include/cuda_gaussian.cuh
     include/gradient.h
     include/nonmaxsupress.h
-    include/doublethreshold.h
+    include/threshold.h
     include/ccl.h
+    include/hysteresis.h
     
     src/debug.cpp
-    src/gaussianfilter.cpp
-    src/cuda_gaussianfilter.cu
+    src/gaussian.cpp
+    src/cuda_gaussian.cu
     src/gradient.cpp
     src/nonmaxsupress.cpp
-    src/doublethreshold.cpp
+    src/threshold.cpp
     src/ccl.cpp
+    src/hysteresis.cpp
 )
 
 set_target_properties(${PROJECT_NAME} PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
@@ -39,10 +41,14 @@ target_include_directories(${PROJECT_NAME}
 )
 
 target_link_libraries(${PROJECT_NAME}
-    PRIVATE
+    PUBLIC
         opencv_core
 
+    PRIVATE
         cva_core
 )
 
 add_subdirectory(tests)
+
+install(TARGETS ${PROJECT_NAME})
+

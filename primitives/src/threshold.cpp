@@ -1,8 +1,8 @@
-#include "doublethreshold.h"
+#include "threshold.h"
 
 #define OFFSET(x, y) OFFSET_ROW_MAJOR(x, y, width, 1)
 
-void DoubleThreshold::apply(const cv::Mat& input, cv::Mat& output) {
+void Threshold::apply(const cv::Mat& input, cv::Mat& output) {
 	int width = input.cols;
 	int height = input.rows;
 	const float* const inputData = (float*)input.data;

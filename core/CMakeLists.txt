@@ -32,3 +32,4 @@ target_link_libraries(${PROJECT_NAME}
         cudart_static
 )
 
+install(TARGETS ${PROJECT_NAME})

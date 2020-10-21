@@ -1,6 +1,6 @@
 cmake_minimum_required(VERSION 3.5)
 
-set(TEST_NAME "gaussianfilter")
+set(TEST_NAME "gaussian")
 set(PROJECT_NAME "test_${TEST_NAME}")
 
 project(${PROJECT_NAME} LANGUAGES CXX CUDA)
@@ -8,6 +8,8 @@ project(${PROJECT_NAME} LANGUAGES CXX CUDA)
 add_executable(${PROJECT_NAME}
     ${PROJECT_NAME}.cpp
 )
+
+target_compile_definitions(${PROJECT_NAME} PRIVATE DATA_ROOT=${DATA_ROOT})
 
 set_target_properties(${PROJECT_NAME} PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
 #set_target_properties(${PROJECT_NAME} PROPERTIES CUDA_RESOLVE_DEVICE_SYMBOLS ON)
@@ -32,4 +34,4 @@ target_link_libraries(${PROJECT_NAME}
         cva_primitives
 )
 
-
+install(TARGETS ${PROJECT_NAME})

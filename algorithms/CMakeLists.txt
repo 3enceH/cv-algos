@@ -8,11 +8,11 @@ project(${PROJECT_NAME} LANGUAGES CXX CUDA)
 find_package(OpenCV 4.3.0 REQUIRED COMPONENTS highgui)
 #find_package(CUDA 11.0 REQUIRED)
 
-add_executable(${PROJECT_NAME}
-    include/cannyedgedetector.h
+add_library(${PROJECT_NAME} SHARED
+    include/canny.h
 
-    src/cannyedgedetector.cpp
-    src/canny_test.cpp
+    src/canny.cpp
+    #src/canny_test.cpp
 )
 
 set_target_properties(${PROJECT_NAME} PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
@@ -37,3 +37,5 @@ target_link_libraries(${PROJECT_NAME}
 )
 
 add_subdirectory(tests)
+
+install(TARGETS ${PROJECT_NAME})

@@ -1,11 +1,11 @@
-#include "gaussianfilter.h"
+#include "gaussian.h"
 
 #include <numeric>
 #include <iostream>
 
 #define OFFSET(x, y) OFFSET_ROW_MAJOR(x, y, width, 1)
 
-GaussianFilterBase::GaussianFilterBase(int k, float sigma) {
+GaussianBase::GaussianBase(int k, float sigma) {
 	_size = 2 * k + 1;
 	if (sigma <= 0) {
 		sigma = 0.3f * ((_size - 1) * 0.5f - 1) + 0.8f;
@@ -22,11 +22,11 @@ GaussianFilterBase::GaussianFilterBase(int k, float sigma) {
 	for (auto& value : _kernel) value *= alpha;
 }
 
-GaussianFilterBase::~GaussianFilterBase() {}
+GaussianBase::~GaussianBase() {}
 
-GaussianFilter::GaussianFilter(int k, float sigma) : GaussianFilterBase(k, sigma) {}
+Gaussian::Gaussian(int k, float sigma) : GaussianBase(k, sigma) {}
 
-void GaussianFilter::apply(const cv::Mat& input, cv::Mat& output) {
+void Gaussian::apply(const cv::Mat& input, cv::Mat& output) {
 	assert(_size > 0);
 	const int width = input.cols;
 	const int height = input.rows;
