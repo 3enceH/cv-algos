@@ -15,7 +15,7 @@ void Threshold::apply(const cv::Mat& input, cv::Mat& output) {
     for (int y = 0; y < height; y++) {
         for (int x = 0; x < width; x++) {
             float value = inputData[OFFSET(x, y)];
-            outputData[OFFSET(x, y)] = (value < lowThreshold) ? 0.f : (value >= highThreshold) ? highThreshold : lowThreshold;
+            outputData[OFFSET(x, y)] = (value >= highThreshold) ? highThreshold : (value >= lowThreshold) ? lowThreshold : 0.f;
         }
     }
 }

@@ -2,16 +2,16 @@
 #include <iostream>
 
 CUDAEnv::CUDAEnv() {
-    checkCuda(cudaGetDeviceCount(&_deviceCount));
-    check(_deviceCount > 0, "No devices");
+    CHECK_CUDA(cudaGetDeviceCount(&_deviceCount));
+    CHECK(_deviceCount > 0, "No devices");
     _deviceProps.resize(_deviceCount);
     for (int i = 0; i < _deviceCount; i++)
-        checkCuda(cudaGetDeviceProperties(&_deviceProps[i], i));
+        CHECK_CUDA(cudaGetDeviceProperties(&_deviceProps[i], i));
     cudaSetDevice(activeDeviceId);
 }
 
 void CUDAMemDeleter::operator()(void* ptr) {
-    checkCuda(cudaFree(ptr));
+    CHECK_CUDA(cudaFree(ptr));
 }
 
 CUDAImage::CUDAImage(int width, int height) : width(width), height(height) {
@@ -21,9 +21,9 @@ CUDAImage::CUDAImage(int width, int height) : width(width), height(height) {
 void CUDAImage::init(void* hostPtr /*= nullptr*/) {
     void* devPtr;
     size_t bytes = (size_t)width * height;
-    checkCuda(cudaMalloc(&devPtr, bytes));
+    CHECK_CUDA(cudaMalloc(&devPtr, bytes));
     devBuffer.reset(devPtr);
     if (hostPtr != nullptr) {
-        checkCuda(cudaMemcpy(devPtr, hostPtr, bytes, cudaMemcpyKind::cudaMemcpyHostToDevice));
+        CHECK_CUDA(cudaMemcpy(devPtr, hostPtr, bytes, cudaMemcpyKind::cudaMemcpyHostToDevice));
     }
 }

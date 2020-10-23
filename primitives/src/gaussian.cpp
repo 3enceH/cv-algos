@@ -4,8 +4,10 @@
 #include <iostream>
 
 #define OFFSET(x, y) OFFSET_ROW_MAJOR(x, y, width, 1)
+#define BORDER_WRAP BORDER_REFLECT_101
 
-GaussianBase::GaussianBase(int k, float sigma) {
+GaussianBase::GaussianBase(int size, float sigma){
+    int k = size / 2;
     _size = 2 * k + 1;
     if (sigma <= 0) {
         sigma = 0.3f * ((_size - 1) * 0.5f - 1) + 0.8f;
@@ -24,7 +26,7 @@ GaussianBase::GaussianBase(int k, float sigma) {
 
 GaussianBase::~GaussianBase() {}
 
-Gaussian::Gaussian(int k, float sigma) : GaussianBase(k, sigma) {}
+Gaussian::Gaussian(int size, float sigma) : GaussianBase(size, sigma) {}
 
 void Gaussian::apply(const cv::Mat& input, cv::Mat& output) {
     assert(_size > 0);
@@ -50,7 +52,7 @@ void Gaussian::apply(const cv::Mat& input, cv::Mat& output) {
         for (int x = 0; x < width; x++) {
             float sum = 0;
             for (int i = -k; i <= k; i++) {
-                int xx = BORDER_MIRROR(x + i, width);
+                int xx = BORDER_WRAP(x + i, width);
                 sum += _kernel[i + k] * inputData[OFFSET(xx, y)];
             }
             outputData[OFFSET(x, y)] = (uchar)CLAMP(sum, 0, 255);
@@ -68,7 +70,7 @@ void Gaussian::apply(const cv::Mat& input, cv::Mat& output) {
         for (int y = 0; y < height; y++) {
             float sum = 0;
             for (int i = -k; i <= k; i++) {
-                int yy = BORDER_MIRROR(y + i, height);
+                int yy = BORDER_WRAP(y + i, height);
                 sum += _kernel[i + k] * inputData[OFFSET(x, yy)];
             }
             outputData[OFFSET(x, y)] = (uchar)CLAMP(sum, 0, 255);

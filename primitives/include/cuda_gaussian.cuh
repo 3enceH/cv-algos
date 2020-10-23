@@ -12,8 +12,8 @@ private:
 
 public:
     static const int ThreadsPerBlockDefault = -1;
-    EXPORT GaussianCUDA(std::shared_ptr<CUDAEnv>& deviceEnv, int k, float sigma = 0.f, int threadsPerBlock = ThreadsPerBlockDefault);
-    EXPORT GaussianCUDA(int k, float sigma = 0.f, int threadsPerBlock = ThreadsPerBlockDefault);
+    EXPORT GaussianCUDA(std::shared_ptr<CUDAEnv>& deviceEnv, int size, float sigma = 1.f, int threadsPerBlock = ThreadsPerBlockDefault);
+    EXPORT GaussianCUDA(int size, float sigma = 1.f, int threadsPerBlock = ThreadsPerBlockDefault);
 
     void EXPORT apply(const cv::Mat& input, cv::Mat& output) override;
 

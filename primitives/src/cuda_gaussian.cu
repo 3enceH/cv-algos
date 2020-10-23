@@ -2,6 +2,7 @@
 #include <iostream>
 
 #define OFFSET(x, y) OFFSET_ROW_MAJOR(x, y, width, 1)
+#define BORDER_WRAP BORDER_REFLECT_101
 
 const int gMaxK = 16;
 
@@ -30,7 +31,7 @@ __global__ void gaussianHorizontalShared(int kernelSize, const uchar* input, uch
     for (int x = 0; x < width; x++) {
         float sum = 0;
         for (int i = -k; i <= k; i++) {
-            int xx = BORDER_MIRROR(x + i, width);
+            int xx = BORDER_WRAP(x + i, width);
             sum += cKernel[i + k] * sInput[OFFSET_ROW_MAJOR(xx, lY, width, 1)];
         }
         output[OFFSET(x, gY)] = CLAMP(sum, 0, 255);
@@ -57,7 +58,7 @@ __global__ void gaussianVerticalShared(int kernelSize, const uchar* input, uchar
     for (int y = 0; y < height; y++) {
         float sum = 0;
         for (int i = -k; i <= k; i++) {
-            int yy = BORDER_MIRROR(y + i, height);
+            int yy = BORDER_WRAP(y + i, height);
             sum += cKernel[i + k] * sInput[OFFSET_ROW_MAJOR(lX, yy, blockDim.x, 1)];
         }
         output[OFFSET(gX, y)] = CLAMP(sum, 0, 255);
@@ -75,7 +76,7 @@ __global__ void gaussianHorizontal(float* kernel, int filterSize, const uchar* i
     for (int x = 0; x < width; x++) {
         float sum = 0;
         for (int i = -k; i <= k; i++) {
-            int xx = BORDER_MIRROR(x + i, width);
+            int xx = BORDER_WRAP(x + i, width);
             sum += kernel[i + k] * input[OFFSET(xx, idy)];
         }
         output[OFFSET(x, idy)] = CLAMP(sum, 0, 255);
@@ -93,19 +94,19 @@ __global__ void gaussianVertical(float* kernel, int filterSize, const uchar* inp
     for (int y = 0; y < height; y++) {
         float sum = 0;
         for (int i = -k; i <= k; i++) {
-            int yy = BORDER_MIRROR(y + i, height);
+            int yy = BORDER_WRAP(y + i, height);
             sum += kernel[i + k] * input[OFFSET(idx, yy)];
         }
         output[OFFSET(idx, y)] = CLAMP(sum, 0, 255);
     }
 }
 
-GaussianCUDA::GaussianCUDA(std::shared_ptr<CUDAEnv>& deviceEnv, int k, float sigma, int threadsPerBlock) : GaussianBase(k, sigma), deviceEnv(deviceEnv), threadsPerBlock(threadsPerBlock)
+GaussianCUDA::GaussianCUDA(std::shared_ptr<CUDAEnv>& deviceEnv, int size, float sigma, int threadsPerBlock) : GaussianBase(size, sigma), deviceEnv(deviceEnv), threadsPerBlock(threadsPerBlock)
 {
-    assert(k <= gMaxK);
+    assert(size / 2 <= gMaxK);
 }
 
-GaussianCUDA::GaussianCUDA(int k, float sigma, int threadsPerBlock) : GaussianCUDA(std::make_shared<CUDAEnv>(),  k, sigma, threadsPerBlock)
+GaussianCUDA::GaussianCUDA(int size, float sigma, int threadsPerBlock) : GaussianCUDA(std::make_shared<CUDAEnv>(), size, sigma, threadsPerBlock)
 {
 }
 
@@ -133,12 +134,12 @@ void GaussianCUDA::apply(const cv::Mat& input, cv::Mat& output) {
 
     if (sharedBytesNeeded > 0 && sharedBytesNeeded <= sharedMemPerBlock) {
         apply_v2(input.data, output.data, input.cols, input.rows);
-        std::cout << "GaussianFilterCUDA.v2 threadsPerBlock " << threadsPerBlock << std::endl;
+        //std::cout << "GaussianFilterCUDA.v2 threadsPerBlock " << threadsPerBlock << std::endl;
     }
     else {
         threadsPerBlock = 32;
         apply_v1(input.data, output.data, input.cols, input.rows);
-        std::cout << "GaussianFilterCUDA.v1 threadsPerBlock " << threadsPerBlock << std::endl;
+        //std::cout << "GaussianFilterCUDA.v1 threadsPerBlock " << threadsPerBlock << std::endl;
     }
 }
 
@@ -149,22 +150,22 @@ void GaussianCUDA::apply_v1(const uchar* input, uchar* output, int width, int he
         void* hostPtr = (void*)_kernel.data();
         size_t kernelBytes = _kernel.size() * sizeof(float);
 
-        checkCuda(cudaMalloc(&devPtr, kernelBytes));
+        CHECK_CUDA(cudaMalloc(&devPtr, kernelBytes));
         d_kernel.reset((float*)devPtr);
 
-        checkCuda(cudaMemcpy(devPtr, hostPtr, kernelBytes, cudaMemcpyKind::cudaMemcpyHostToDevice));
+        CHECK_CUDA(cudaMemcpy(devPtr, hostPtr, kernelBytes, cudaMemcpyKind::cudaMemcpyHostToDevice));
     }
 
     if (d_data.get() == nullptr) {
         void* devPtr;
-        checkCuda(cudaMalloc(&devPtr, (size_t)width * height));
+        CHECK_CUDA(cudaMalloc(&devPtr, (size_t)width * height));
 
         d_data.reset((uchar*)devPtr);
     }
 
     if (d_buffer.get() == nullptr) {
         void* devPtr;
-        checkCuda(cudaMalloc(&devPtr, (size_t)width * height));
+        CHECK_CUDA(cudaMalloc(&devPtr, (size_t)width * height));
 
         d_buffer.reset((uchar*)devPtr);
     }
@@ -172,42 +173,42 @@ void GaussianCUDA::apply_v1(const uchar* input, uchar* output, int width, int he
     int kernelSize = (int)_kernel.size();
     size_t inputBytes = width * height;
 
-    checkCuda(cudaMemcpy(d_data.get(), input, inputBytes, cudaMemcpyKind::cudaMemcpyHostToDevice));
+    CHECK_CUDA(cudaMemcpy(d_data.get(), input, inputBytes, cudaMemcpyKind::cudaMemcpyHostToDevice));
 
     {
         dim3 block(1, threadsPerBlock);
         dim3 grid(1, ALIGN_UP(height, block.y));
         gaussianHorizontal << <grid, block >> > (d_kernel.get(), kernelSize, d_data.get(), d_buffer.get(), width, height);
     }
-    checkCuda(cudaDeviceSynchronize());
+    CHECK_CUDA(cudaDeviceSynchronize());
 
     {
         dim3 block(threadsPerBlock);
         dim3 grid(ALIGN_UP(width, block.x));
         gaussianVertical << <grid, block >> > (d_kernel.get(), kernelSize, d_buffer.get(), d_data.get(), width, height);
     }
-    checkCuda(cudaDeviceSynchronize());
+    CHECK_CUDA(cudaDeviceSynchronize());
 
-    checkCuda(cudaMemcpy(output, d_data.get(), inputBytes, cudaMemcpyKind::cudaMemcpyDeviceToHost));
+    CHECK_CUDA(cudaMemcpy(output, d_data.get(), inputBytes, cudaMemcpyKind::cudaMemcpyDeviceToHost));
 }
 
 void GaussianCUDA::apply_v2(const uchar* input, uchar* output, int width, int height) {
 
     if (!symbolUploaded) {
-        checkCuda(cudaMemcpyToSymbol(cKernel, (void*)_kernel.data(), _kernel.size() * sizeof(float)));
+        CHECK_CUDA(cudaMemcpyToSymbol(cKernel, (void*)_kernel.data(), _kernel.size() * sizeof(float)));
         symbolUploaded = true;
     }
 
     if (d_data.get() == nullptr) {
         void* devPtr;
-        checkCuda(cudaMalloc(&devPtr, (size_t)width * height));
+        CHECK_CUDA(cudaMalloc(&devPtr, (size_t)width * height));
 
         d_data.reset((uchar*)devPtr);
     }
 
     if (d_buffer.get() == nullptr) {
         void* devPtr;
-        checkCuda(cudaMalloc(&devPtr, (size_t)width * height));
+        CHECK_CUDA(cudaMalloc(&devPtr, (size_t)width * height));
 
         d_buffer.reset((uchar*)devPtr);
     }
@@ -215,25 +216,25 @@ void GaussianCUDA::apply_v2(const uchar* input, uchar* output, int width, int he
     int kernelSize = (int)_kernel.size();
     size_t inputBytes = width * height;
 
-    checkCuda(cudaMemcpy(d_data.get(), input, inputBytes, cudaMemcpyKind::cudaMemcpyHostToDevice));
+    CHECK_CUDA(cudaMemcpy(d_data.get(), input, inputBytes, cudaMemcpyKind::cudaMemcpyHostToDevice));
 
     {
         dim3 block(1, threadsPerBlock);
         dim3 grid(1, ALIGN_UP(height, block.y));
         size_t sharedBytes = ALIGN_UP(block.y * width, 4);
-        check(sharedBytes <= deviceEnv->currentDeviceProp().sharedMemPerBlock, "Not enough shared memory");
+        CHECK(sharedBytes <= deviceEnv->currentDeviceProp().sharedMemPerBlock, "Not enough shared memory");
         gaussianHorizontalShared << <grid, block, sharedBytes >> > (kernelSize, d_data.get(), d_buffer.get(), width, height);
     }
-    checkCuda(cudaDeviceSynchronize());
+    CHECK_CUDA(cudaDeviceSynchronize());
 
     {
         dim3 block(threadsPerBlock);
         dim3 grid(ALIGN_UP(width, block.x));
         size_t sharedBytes = ALIGN_UP(block.x * height, 4);
-        check(sharedBytes <= deviceEnv->currentDeviceProp().sharedMemPerBlock, "Not enough shared memory");
+        CHECK(sharedBytes <= deviceEnv->currentDeviceProp().sharedMemPerBlock, "Not enough shared memory");
         gaussianVerticalShared << <grid, block, sharedBytes >> > (kernelSize, d_buffer.get(), d_data.get(), width, height);
     }
-    checkCuda(cudaDeviceSynchronize());
+    CHECK_CUDA(cudaDeviceSynchronize());
 
-    checkCuda(cudaMemcpy(output, d_data.get(), inputBytes, cudaMemcpyKind::cudaMemcpyDeviceToHost));
+    CHECK_CUDA(cudaMemcpy(output, d_data.get(), inputBytes, cudaMemcpyKind::cudaMemcpyDeviceToHost));
 }

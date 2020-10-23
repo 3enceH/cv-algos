@@ -43,6 +43,7 @@ target_include_directories(${PROJECT_NAME}
 target_link_libraries(${PROJECT_NAME}
     PUBLIC
         opencv_core
+        opencv_imgproc
 
     PRIVATE
         cva_core

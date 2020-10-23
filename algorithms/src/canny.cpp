@@ -5,11 +5,10 @@
 
 Canny::Canny(float lowThreshold, float highThreshold)
 {
-    gaussFilter = std::make_unique<GaussianCUDA>(2);
+    gaussFilter = std::make_unique<GaussianCUDA>(5, 1.f);
     gradient = std::make_unique<Gradient>();
     nonMaxSupressor = std::make_unique<NonMaxSupress>();
-    thresholder = std::make_unique<Threshold>(lowThreshold, highThreshold);
-    labeler = std::make_unique<CCL>();
+    threshold = std::make_unique<Threshold>(lowThreshold, highThreshold);
     hys = std::make_unique<Hysteresis>(lowThreshold, highThreshold);
 }
 
@@ -29,8 +28,11 @@ void Canny::apply(const cv::Mat& input, cv::Mat& output) {
     nonMaxSupressor->apply(combinedGradients, gradients);
     perfTimer.tag("nonmax");
 
-    thresholder->apply(gradients, gradients);
+    threshold->apply(gradients, gradients);
     perfTimer.tag("threshold");
+
+    //output = cv::Mat(gradients.rows, gradients.cols, CV_8UC1);
+    //cv::convertScaleAbs(gradients, output);
 
     hys->apply(gradients, output);
     perfTimer.tag("hysteresis");

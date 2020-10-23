@@ -12,95 +12,103 @@ int main(int argc, char** argv) {
     return RUN_ALL_TESTS();
 }
 
+void check(cv::Mat& out1, cv::Mat& out2) {
+    cv::Mat diffImg;
+    cv::absdiff(out1, out2, diffImg);
+
+    double avgDiffPerPix = cv::sum(diffImg)[0] / ((double)out1.cols * out1.rows);
+    EXPECT_TRUE(avgDiffPerPix < 1.1f);
+
+    int maxDiff = 0;
+    int epsilon = 3;
+    bool equals = std::all_of(diffImg.begin<uchar>(), diffImg.end<uchar>(), [&](uchar val) {
+        if (val > maxDiff) {
+            maxDiff = val;
+        }
+        return val < epsilon;
+        });
+    EXPECT_TRUE(equals);
+    std::cout << "avgDiffPerPix " << std::setw(10) << std::setprecision(5) << avgDiffPerPix << " maxDiff " << std::setw(5) << maxDiff << std::endl;
+}
+
+cv::Mat squares(int width, int height) {
+    cv::Mat out(height, width, CV_8UC1);
+    for (int y = 0; y < height; y++) {
+        for (int x = 0; x < width; x++) {
+            uchar value = ((x / 32 + y / 32) % 2 == 0) ? 255 : 0;
+            out.data[y * width + x] = value;
+        }
+    }
+    return std::move(out);
+}
+
+cv::Mat gradient(int width, int height) {
+    cv::Mat out(height, width, CV_8UC1);
+    const int whalf = width / 2;
+    const int hhalf = height / 2;
+    for (int y = 0; y < height; y++) {
+        for (int x = 0; x < width; x++) {
+            int xx = x >= whalf ? width - 1 - x : x;
+            int yy = y >= hhalf ? height - 1 - y : y;
+            uchar value = (uchar)(((xx % whalf) / (float)whalf) * 127 + ((yy % hhalf) / (float)hhalf) * 127);
+            out.data[y * width + x] = value;
+        }
+    }
+    return std::move(out);
+}
+
 class GradientOpenCVComparisonTest {
 public:
-    void generated(int width, int height) {
+    void generated(cv::Mat& input) {
 
-        cv::Mat squares(height, width, CV_8UC1);
-        for (int y = 0; y < height; y++) {
-            for (int x = 0; x < width; x++) {
-                uchar value = ((x / 32 + y / 32) % 2 == 0) ? 255 : 0;
-                squares.data[y * width + x] = value;
-            }
-        }
         cv::Mat out1, out2;
 
         float threshold1 = 70.f;
         float threshold2 = 140.f;
-        cv::Canny(squares, out1, threshold1, threshold2);
+        cv::Canny(input, out1, threshold1, threshold2);
 
         Canny canny(threshold1, threshold2);
-        canny.apply(squares, out2);
+        canny.apply(input, out2);
 
         //cv::Mat out1u8, out2u8;
         //cv::convertScaleAbs(mag, out2u8);
         //cv::convertScaleAbs(out1, out1u8);
 
-        cv::Mat diffImg;
-        cv::absdiff(out1, out2, diffImg);
-        double diff = cv::sum(diffImg)[0];
-
-        double avgDiffPerPix = diff / ((double)width * height);
-        EXPECT_TRUE(avgDiffPerPix < 1.f);
-
-        int maxDiffPerPix = 0;
-        int epsilon = 255/4;
-        bool equals = std::all_of(diffImg.begin<uchar>(), diffImg.end<uchar>(), [&](uchar val) {
-            if ((int)val > maxDiffPerPix) {
-                maxDiffPerPix = val;
-            }
-            return (int)val < epsilon;
-            });
-        EXPECT_TRUE(equals);
-        std::cout << "avgDiffPerPix " << std::setw(10) << std::setprecision(5) << avgDiffPerPix << " maxDiffPerPix " << std::setw(5) << maxDiffPerPix << std::endl;
+        check(out1, out2);
     }
 
     void picture(const std::string& name) {
 
         std::string filename = std::string(STR(DATA_ROOT)) + "/" + name;
-        cv::Mat pic;
-        cv::cvtColor(cv::imread(filename), pic, cv::COLOR_RGB2GRAY);
+        cv::Mat pic = cv::imread(filename), grey;
+        cv::cvtColor(pic, grey, cv::COLOR_RGB2GRAY);
 
         cv::Mat out1, out2;
 
-        float threshold1 = 70.f;
-        float threshold2 = 140.f;
-        cv::Canny(pic, out1, threshold1, threshold2);
+        float low = 70.f;
+        float high = 140.f;
+        cv::Canny(grey, out1, low, high);
 
-        Canny canny(threshold1, threshold2);
-        canny.apply(pic, out2);
+        Canny canny(low, high);
+        canny.apply(grey, out2);
 
         //cv::Mat out1u8, out2u8;
         //cv::convertScaleAbs(mag, out2u8);
         //cv::convertScaleAbs(out1, out1u8);
 
-        int width = pic.cols;
-        int height = pic.rows;
+        cv::Mat lines;
+        joinChannels(grey, out2, lines);
 
-        cv::Mat diffImg;
-        cv::absdiff(out1, out2, diffImg);
-        double diff = cv::sum(diffImg)[0];
-
-        double avgDiffPerPix = diff / ((double)width * height);
-        EXPECT_TRUE(avgDiffPerPix < 1.f);
-
-        int maxDiffPerPix = 0;
-        int epsilon = 255 / 4;
-        bool equals = std::all_of(diffImg.begin<uchar>(), diffImg.end<uchar>(), [&](uchar val) {
-            if (val > maxDiffPerPix) {
-                maxDiffPerPix = val;
-            }
-            return val < epsilon;
-            });
-        EXPECT_TRUE(equals);
-        std::cout << "avgDiffPerPix " << std::setw(10) << std::setprecision(5) << avgDiffPerPix << " maxDiffPerPix " << std::setw(5) << maxDiffPerPix << std::endl;
+        check(out1, out2);
     }
 };
 
 TEST(GradientTest, OpenCVComparison) {
     GradientOpenCVComparisonTest test;
-    test.generated(64, 64);
-    test.generated(10 * 4 * 32, 10 * 4 * 32);
+    test.generated(squares(64, 64));
+    test.generated(squares(10 * 4 * 32, 10 * 4 * 32));
+    test.generated(gradient(64, 64));
+    test.generated(gradient(10 * 4 * 32, 10 * 4 * 32));
     test.picture("samuraijack.jpg");
     test.picture("rihanna.jpg");
 }

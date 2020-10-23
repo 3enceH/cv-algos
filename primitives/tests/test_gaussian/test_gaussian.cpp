@@ -7,16 +7,39 @@
 #include <opencv2/highgui.hpp>
 #include <opencv2/imgproc.hpp>
 
-#define VERBOSE 1
-
 int main(int argc, char** argv) {
-
-#if VERBOSE
-    std::cout.setstate(std::ios_base::failbit);
-#endif
-
     ::testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();
+}
+
+cv::Mat getSquares(int width, int height) {
+    cv::Mat squares(height, width, CV_8UC1);
+    for (int y = 0; y < height; y++) {
+        for (int x = 0; x < width; x++) {
+            uchar value = ((x / (width / 4) + y / (height / 4)) % 2 == 0) ? 255 : 0;
+            squares.data[y * width + x] = value;
+        }
+    }
+    return std::move(squares);
+}
+
+void check(cv::Mat& out1, cv::Mat& out2) {
+    cv::Mat diffImg;
+    cv::absdiff(out1, out2, diffImg);
+
+    double avgDiffPerPix = cv::sum(diffImg)[0] / ((double)out1.cols * out1.rows);
+    EXPECT_TRUE(avgDiffPerPix < 1.1f);
+
+    int maxDiff = 0;
+    int epsilon = 3;
+    bool equals = std::all_of(diffImg.begin<uchar>(), diffImg.end<uchar>(), [&](uchar val) {
+        if (val > maxDiff) {
+            maxDiff = val;
+        }
+        return val < epsilon;
+        });
+    EXPECT_TRUE(equals);
+    std::cout << "avgDiffPerPix " << std::setw(10) << std::setprecision(5) << avgDiffPerPix << " maxDiff " << std::setw(5) << maxDiff << std::endl;
 }
 
 class GaussianFilterAlgorithmicTest {
@@ -46,24 +69,18 @@ public:
     }
 };
 
-class GaussianFilterGPUComparisonTest {
+class GaussianFilterCUDAComparisonTest {
 public:
-    void operator()(int width, int height, int k, float sigma = 1.f) {
-        std::cout << "dims " << width << "x" << height << " k " << k << " sigma " << sigma << std::endl;
+    void operator()(int width, int height, int size, float sigma = 1.f) {
+        std::cout << "generated dims " << width << "x" << height << " size " << size << " sigma " << sigma << std::endl;
 
-        cv::Mat squares(height, width, CV_8UC1);
-        for (int y = 0; y < height; y++) {
-            for (int x = 0; x < width; x++) {
-                uchar value = ((x / (width / 4) + y / (height / 4)) % 2 == 0) ? 255 : 0;
-                squares.data[y * width + x] = value;
-            }
-        }
+        cv::Mat squares = getSquares(width, height);
 
         cv::Mat out1(height, width, CV_8UC1);
         cv::Mat out2(height, width, CV_8UC1);
 
-        Gaussian cpuFilter(k, sigma);
-        GaussianCUDA gpuFilter(k, sigma);
+        Gaussian cpuFilter(size, sigma);
+        GaussianCUDA gpuFilter(size, sigma);
 
         PerformanceTimer perfTimer;
         perfTimer.start();
@@ -76,50 +93,27 @@ public:
         
         std::cout << perfTimer.summary();
 
-        cv::Mat diffImg;
-        cv::absdiff(out1, out2, diffImg);
-
-        double diffPerPix = cv::sum(diffImg)[0] / ((double)width * height);
-        EXPECT_TRUE(diffPerPix < 1.f);
-
-        int maxDiff = 0;
-        int epsilon = 3;
-        bool equals = std::all_of(diffImg.begin<uchar>(), diffImg.end<uchar>(), [&](uchar val) {
-            if (val > maxDiff) {
-                maxDiff = val;
-            }
-            return val < epsilon;
-            });
-        EXPECT_TRUE(equals);
-        std::cout << "diffPerPix " << std::setw(10) << std::setprecision(5) << diffPerPix << " maxDiff " << std::setw(5) << maxDiff << std::endl;
-
-        std::cout << std::endl;
+        check(out1, out2);
     }
 };
 
 
 class GaussianFilterOpenCVComparisonTest {
 public:
-    void generated(int width, int height, int k, float sigma = 1.f) {
-        std::cout << "dims " << width << "x" << height << " k " << k << " sigma " << sigma << std::endl;
+    void generated(int width, int height, int size, float sigma = 1.f) {
+        std::cout << "generated dims " << width << "x" << height << " size " << size << " sigma " << sigma << std::endl;
 
-        cv::Mat squares(height, width, CV_8UC1);
-        for (int y = 0; y < height; y++) {
-            for (int x = 0; x < width; x++) {
-                uchar value = ((x / (width / 4) + y / (height / 4)) % 2 == 0) ? 255 : 0;
-                squares.data[y * width + x] = value;
-            }
-        }
+        cv::Mat squares = getSquares(width, height);
 
         cv::Mat out1(height, width, CV_8UC1);
         cv::Mat out2(height, width, CV_8UC1);
 
-        GaussianCUDA gpuFilter1(k, sigma);
+        GaussianCUDA gpuFilter1(size, sigma);
 
         PerformanceTimer perfTimer;
         perfTimer.start();
 
-        cv::GaussianBlur(squares, out1, cv::Size(2 * k + 1, 2 * k + 1), sigma);
+        cv::GaussianBlur(squares, out1, cv::Size(size, size), sigma);
         perfTimer.tag("opencv");
         
         gpuFilter1.apply(squares, out2);
@@ -127,28 +121,10 @@ public:
 
         std::cout << perfTimer.summary();
 
-
-        cv::Mat diffImg;
-        cv::absdiff(out1, out2, diffImg);
-
-        double diffPerPix = cv::sum(diffImg)[0] / ((double)width * height);
-        EXPECT_TRUE(diffPerPix < 2.f);
-
-        int maxDiff = 0;
-        int epsilon = 3;
-        bool equals = std::all_of(diffImg.begin<uchar>(), diffImg.end<uchar>(), [&](uchar val) {
-            if (val > maxDiff) {
-                maxDiff = val;
-            }
-            return val < epsilon;
-            });
-        EXPECT_TRUE(equals);
-        std::cout << "diffPerPix " << std::setw(10) << std::setprecision(5) << diffPerPix << " maxDiff " << std::setw(5) << maxDiff << std::endl;
-
-        std::cout << std::endl;
+        check(out1, out2);
     }
 
-    void picture(const std::string& name, int k, float sigma = 1.f) {
+    void picture(const std::string& name, int size, float sigma = 1.f) {
 
         std::string filename = std::string(STR(DATA_ROOT)) + "/" + name;
         cv::Mat pic;
@@ -156,16 +132,16 @@ public:
 
         int width = pic.cols;
         int height = pic.rows;
-        std::cout << "dims " << width << "x" << height << " k " << k << " sigma " << sigma << std::endl;
+        std::cout << "pic " << filename << " dims " << width << "x" << height << " size " << size << " sigma " << sigma << std::endl;
 
         cv::Mat out1, out2;
 
-        GaussianCUDA gpuFilter1(k, sigma);
+        GaussianCUDA gpuFilter1(size, sigma);
 
         PerformanceTimer perfTimer;
         perfTimer.start();
 
-        cv::GaussianBlur(pic, out1, cv::Size(2 * k + 1, 2 * k + 1), sigma);
+        cv::GaussianBlur(pic, out1, cv::Size(size, size), sigma);
         perfTimer.tag("opencv");
 
         gpuFilter1.apply(pic, out2);
@@ -173,46 +149,29 @@ public:
 
         std::cout << perfTimer.summary();
 
-        cv::Mat diffImg;
-        cv::absdiff(out1, out2, diffImg);
-
-        double diffPerPix = cv::sum(diffImg)[0] / ((double)width * height);
-        EXPECT_TRUE(diffPerPix < 1.f);
-
-        int maxDiff = 0;
-        int epsilon = 30;
-        bool equals = std::all_of(diffImg.begin<uchar>(), diffImg.end<uchar>(), [&](uchar val) {
-            if (val > maxDiff) {
-                maxDiff = val;
-            }
-            return val < epsilon;
-            });
-        EXPECT_TRUE(equals);
-        std::cout << "diffPerPix " << std::setw(10) << std::setprecision(5) << diffPerPix << " maxDiff " << std::setw(5) << maxDiff << std::endl;
-
-        std::cout << std::endl;
+        check(out1, out2);
     }
 };
 
 TEST(GaussianFilterTest, Precomputed) {
     GaussianFilterAlgorithmicTest test;
-    test(Gaussian(1), 4 * 4, 3 * 4);
-    test(Gaussian(1, 1.f), 4 * 4, 3 * 4);
-    test(Gaussian(2, 1.f), 4 * 4, 3 * 4);
+    test(Gaussian(3, 1.f), 32, 32);
+    test(Gaussian(5, 3.f), 32, 32);
+    test(Gaussian(7, 5.f), 32, 32);
 }
 
 TEST(GaussianFilterTest, CUDAComparison) {
-    GaussianFilterGPUComparisonTest test;
-    test(32, 32, 2, 1.f);
-    test(10 * 4 * 32, 10 * 4 * 32, 4, 1.f);
-    test(1980, 1280, 4, 1.f);
-    test(4096, 2160, 8, 1.f);
+    GaussianFilterCUDAComparisonTest test;
+    test(32, 32, 5, 1.f);
+    test(10 * 4 * 32, 10 * 4 * 32, 5, 1.f);
+    test(1980, 1280, 10, 1.f);
+    test(4096, 2160, 10, 1.f);
 }
 
 TEST(GaussianFilterTest, OpenCVComparison) {
     GaussianFilterOpenCVComparisonTest test;
-    test.generated(32, 32, 2, 1.f);
-    test.generated(10 * 4 * 32, 10 * 4 * 32, 4, 1.f);
-    test.picture("samuraijack.jpg", 2);
-    test.picture("rihanna.jpg", 4);
+    test.generated(32, 32, 5, 1.f);
+    test.generated(10 * 4 * 32, 10 * 4 * 32, 10, 1.f);
+    test.picture("samuraijack.jpg", 5, 1.f);
+    test.picture("rihanna.jpg", 10, 1.f);
 }
