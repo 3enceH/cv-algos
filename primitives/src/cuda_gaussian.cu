@@ -4,10 +4,9 @@
 #define OFFSET(x, y) OFFSET_ROW_MAJOR(x, y, width, 1)
 #define BORDER_WRAP BORDER_REFLECT_101
 
-const int gMaxK = 16;
+constexpr int cKernelSizeMax = 32;
 
 #define cKernel gaussKernel1D
-#define cKernelSizeMax ALIGN_UP(sizeof(float) * (2 * gMaxK + 1), 4)
 
 __constant__ float cKernel[cKernelSizeMax];
 
@@ -103,7 +102,7 @@ __global__ void gaussianVertical(float* kernel, int filterSize, const uchar* inp
 
 GaussianCUDA::GaussianCUDA(std::shared_ptr<CUDAEnv>& deviceEnv, int size, float sigma, int threadsPerBlock) : GaussianBase(size, sigma), deviceEnv(deviceEnv), threadsPerBlock(threadsPerBlock)
 {
-    assert(size / 2 <= gMaxK);
+    assert(size <= cKernelSizeMax);
 }
 
 GaussianCUDA::GaussianCUDA(int size, float sigma, int threadsPerBlock) : GaussianCUDA(std::make_shared<CUDAEnv>(), size, sigma, threadsPerBlock)

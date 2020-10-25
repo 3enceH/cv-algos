@@ -1,24 +1,18 @@
 cmake_minimum_required(VERSION 3.5)
 
-set(LIB_NAME "core")
-set(PROJECT_NAME "${GLOBAL_PROJECT_NAME}_${LIB_NAME}")
+set(TEST_NAME "custd")
+set(PROJECT_NAME "test_${TEST_NAME}")
 
 project(${PROJECT_NAME} LANGUAGES CXX CUDA)
 
-find_package(CUDA 11.0 REQUIRED)
-
-add_library(${PROJECT_NAME} SHARED
-    include/core.h
-    include/img.h
-    include/cudaenv.h
-    include/custd.h
-
-    src/img.cpp
-    src/cudaenv.cpp
-    src/custd.cpp
+add_executable(${PROJECT_NAME}
+    ${PROJECT_NAME}.cpp
 )
 
+target_compile_definitions(${PROJECT_NAME} PRIVATE DATA_ROOT=${DATA_ROOT})
+
 set_target_properties(${PROJECT_NAME} PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
+#set_target_properties(${PROJECT_NAME} PROPERTIES CUDA_RESOLVE_DEVICE_SYMBOLS ON)
 set_target_properties(${PROJECT_NAME} PROPERTIES CUDA_ARCHITECTURES OFF)
 
 target_include_directories(${PROJECT_NAME}
@@ -26,14 +20,17 @@ target_include_directories(${PROJECT_NAME}
         $<INSTALL_INTERFACE:include>    
         $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/include>
     PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}/../../include
         ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 
 target_link_libraries(${PROJECT_NAME}
     PRIVATE
+        GTest::gtest
         cudart_static
+
+        cva_core
 )
 
 install(TARGETS ${PROJECT_NAME})
 
-add_subdirectory(tests)
