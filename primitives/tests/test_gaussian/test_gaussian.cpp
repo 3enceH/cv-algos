@@ -44,7 +44,7 @@ void check(cv::Mat& out1, cv::Mat& out2) {
 
 class GaussianFilterAlgorithmicTest {
 public:
-    void operator()(Gaussian& filter, int width, int height) {
+    void operator()(Gaussian filter, int width, int height) {
         // kernel initialized correctly ?
         auto& kernel = filter.kernel();
 

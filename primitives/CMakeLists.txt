@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.8 FATAL_ERROR)
 
 set(LIB_NAME "primitives")
 set(PROJECT_NAME "${GLOBAL_PROJECT_NAME}_${LIB_NAME}")
@@ -29,7 +29,7 @@ add_library(${PROJECT_NAME} SHARED
 )
 
 set_target_properties(${PROJECT_NAME} PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
-set_target_properties(${PROJECT_NAME} PROPERTIES CUDA_ARCHITECTURES OFF)
+set_target_properties(${PROJECT_NAME} PROPERTIES CUDA_ARCHITECTURES 50)
 
 target_include_directories(${PROJECT_NAME}
     PUBLIC

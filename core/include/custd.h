@@ -1,6 +1,6 @@
 #include <ostream>
+#include <cassert>
 
-#include <cuda_runtime.h>
 #include "core.h"
 #include "cudaenv.h"
 
@@ -80,7 +80,7 @@ namespace custd {
             iterator to = NON_CONST(begin(), first);
             while (from != end()) {
                 // swap, must save pointer to allocated mem
-                swap(*to, *from);
+                std::swap(*to, *from);
                 ++from;
                 ++to;
                 assert(from <= begin() + Capacity);
@@ -227,7 +227,7 @@ namespace custd {
             iterator to = NON_CONST(begin(), first);
             while (from != end()) {
                 // swap, must save pointer to allocated mem
-                swap(*to, *from);
+                std::swap(*to, *from);
                 ++from;
                 ++to;
                 assert(from <= begin() + Capacity);
@@ -315,7 +315,7 @@ namespace custd {
             for (auto it = first + 1; it != last - i; ++it) {
                 if (*(it - 1) > *it)
                 {
-                    swap(*(it - 1), *it);
+                    std::swap(*(it - 1), *it);
                     swapped = true;
                 }
             }

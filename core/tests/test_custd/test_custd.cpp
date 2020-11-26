@@ -2,6 +2,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <chrono>
+#include <cmath>
 #include <cuda_runtime.h>
 
 inline cudaError_t cpu_malloc(void** devPtr, size_t size) {
@@ -42,8 +43,8 @@ struct Rect {
     Rect(float x, float y) : x(x), y(y) {}
     Rect(int x, int y) : x((float)x), y((float)y) {}
 
-    bool operator<(const Rect& other) { return hypot(x, y) < hypot(other.x, other.y); }
-    bool operator==(const Rect& other) { return hypot(x, y) == hypot(other.x, other.y); }
+    bool operator<(const Rect& other) { return hypotf(x, y) < hypotf(other.x, other.y); }
+    bool operator==(const Rect& other) { return hypotf(x, y) == hypotf(other.x, other.y); }
     bool operator<=(const Rect& other) { return *this < other || *this == other; }
     bool operator>(const Rect& other) { return !(*this <= other); }
 };

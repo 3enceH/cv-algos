@@ -1,9 +1,18 @@
 #pragma once 
 
-#ifndef EXPORT
-#ifdef _MSC_VER
-#define EXPORT __declspec(dllexport)
-#endif
+#if defined(_MSC_VER)
+    #define WIN32_LEAN_AND_MEAN
+    #define NOCOMM
+    #define NOMINMAX
+    #define EXPORT __declspec(dllexport)
+    #define IMPORT __declspec(dllimport)
+#elif defined(__GNUC__)
+    #define EXPORT __attribute__((visibility("default")))
+    #define IMPORT
+#else
+    #define EXPORT
+    #define IMPORT
+    #pragma warning Unknown dynamic link import/export semantics.
 #endif
 
 #define OFFSET_ROW_MAJOR(x, y, colSize, channels) ((channels) * ((y) * (colSize) + (x)))
@@ -17,5 +26,5 @@
 #define XSTR(a) #a
 #define STR(a) XSTR(a)
 
-constexpr float M_PI = 3.14159265358979323846f;
-
+constexpr double PI =   3.141592653589793238463;
+constexpr float  PI_F = 3.14159265358979f;

@@ -23,9 +23,9 @@ std::string PerformanceTimer::summary() const {
 
     std::ostringstream stream;
 
-    auto& cur = log.cbegin();
+    auto cur = log.begin();
     cur++;
-    auto& last = log.cbegin();
+    auto last = log.begin();
     while (cur != log.cend()) {
         auto diff = std::chrono::duration_cast<std::chrono::milliseconds>(cur->first - last->first).count();
         float ratio = 100.f * diff / (float)elapsed;

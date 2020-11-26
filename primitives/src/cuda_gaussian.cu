@@ -105,8 +105,9 @@ GaussianCUDA::GaussianCUDA(std::shared_ptr<CUDAEnv>& deviceEnv, int size, float 
     assert(size <= cKernelSizeMax);
 }
 
-GaussianCUDA::GaussianCUDA(int size, float sigma, int threadsPerBlock) : GaussianCUDA(std::make_shared<CUDAEnv>(), size, sigma, threadsPerBlock)
+GaussianCUDA::GaussianCUDA(int size, float sigma, int threadsPerBlock) : GaussianBase(size, sigma), deviceEnv(std::make_shared<CUDAEnv>()), threadsPerBlock(threadsPerBlock)
 {
+    assert(size <= cKernelSizeMax);
 }
 
 

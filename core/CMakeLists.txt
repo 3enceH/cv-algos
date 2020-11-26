@@ -1,11 +1,11 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.8 FATAL_ERROR)
 
 set(LIB_NAME "core")
 set(PROJECT_NAME "${GLOBAL_PROJECT_NAME}_${LIB_NAME}")
 
 project(${PROJECT_NAME} LANGUAGES CXX CUDA)
 
-find_package(CUDA 11.0 REQUIRED)
+find_package(CUDAToolkit 10.2 REQUIRED)
 
 add_library(${PROJECT_NAME} SHARED
     include/core.h
@@ -19,7 +19,7 @@ add_library(${PROJECT_NAME} SHARED
 )
 
 set_target_properties(${PROJECT_NAME} PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
-set_target_properties(${PROJECT_NAME} PROPERTIES CUDA_ARCHITECTURES OFF)
+set_target_properties(${PROJECT_NAME} PROPERTIES POSITION_INDEPENDENT_CODE ON)
 
 target_include_directories(${PROJECT_NAME}
     PUBLIC
@@ -30,10 +30,10 @@ target_include_directories(${PROJECT_NAME}
 )
 
 target_link_libraries(${PROJECT_NAME}
-    PRIVATE
-        cudart_static
+    PUBLIC
+        CUDA::cudart_static
 )
 
-install(TARGETS ${PROJECT_NAME})
+install(TARGETS ${PROJECT_NAME} DESTINATION lib)
 
 add_subdirectory(tests)

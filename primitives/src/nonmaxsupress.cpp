@@ -21,7 +21,7 @@ void NonMaxSupress::apply(const cv::Mat& input, cv::Mat& output) {
             bool flag = false;
             float mag = inputData[OFFSET_IN(x, y) + 0];
             float rad = inputData[OFFSET_IN(x, y) + 1];
-            float deg = (rad * 180.f) / M_PI;
+            float deg = (rad * 180.f) / PI_F;
             deg = deg < 0 ? deg + 180.f : deg;
             assert(deg >= 0 && deg <= 180.f);
 
