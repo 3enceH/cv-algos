@@ -3,7 +3,8 @@
 #include "core.h"
 #include <opencv2/core.hpp>
 
-class NonMaxSupress {
+class NonMaxSupress
+{
 public:
     // input: CV_32FC2, output: CV_32FC1
     void EXPORT apply(const cv::Mat& input, cv::Mat& output);

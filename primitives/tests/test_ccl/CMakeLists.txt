@@ -25,9 +25,7 @@ target_include_directories(${PROJECT_NAME}
 target_link_libraries(${PROJECT_NAME}
     PRIVATE
         GTest::gtest
-        opencv_highgui
 
-        cva_core
         cva_primitives
 )
 

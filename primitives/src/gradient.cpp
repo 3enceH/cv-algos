@@ -2,27 +2,30 @@
 
 #include "core.h"
 
-#define OFFSET(x, y) OFFSET_ROW_MAJOR(x, y, width, 1)
+#define OFFSET(x, y)     OFFSET_ROW_MAJOR(x, y, width, 1)
 #define OFFSET_OUT(x, y) OFFSET_ROW_MAJOR(x, y, width, 2)
-#define BORDER_WRAP BORDER_REFLECT_101
+#define BORDER_WRAP      BORDER_REFLECT_101
 
 #include <opencv2/imgproc.hpp>
 
-void Gradient::apply(const cv::Mat& input, cv::Mat& output) {
+void Gradient::apply(const cv::Mat& input, cv::Mat& output)
+{
 
     // Sobel operators derivative 1
-    const int kX[3] = { -1, 0, 1 };
-    const int kY[3] = { 1, 2, 1 };
+    const int kX[3] = {-1, 0, 1};
+    const int kY[3] = {1, 2, 1};
 
     int width = input.cols;
     int height = input.rows;
     const uchar* const inputData = input.data;
 
-    if (output.empty()) {
+    if(output.empty())
+    {
         output = std::move(cv::Mat(height, width, CV_32FC2));
     }
 
-    if (bufferX.empty() || bufferY.empty() || bufferX.cols != width || bufferX.rows != height) {
+    if(bufferX.empty() || bufferY.empty() || bufferX.cols != width || bufferX.rows != height)
+    {
         bufferX = cv::Mat(height, width, CV_32SC1);
         bufferY = cv::Mat(height, width, CV_32SC1);
     }
@@ -32,11 +35,13 @@ void Gradient::apply(const cv::Mat& input, cv::Mat& output) {
     int* hY = (int*)bufferY.data;
 
     // horizontal pass
-#ifdef _MSC_VER 
-#pragma loop(hint_parallel(4))
+#ifdef _MSC_VER
+#    pragma loop(hint_parallel(4))
 #endif
-    for (int y = 0; y < height; y++) {
-        for (int x = 0; x < width; x++) {
+    for(int y = 0; y < height; y++)
+    {
+        for(int x = 0; x < width; x++)
+        {
             int leftIdx = OFFSET(BORDER_WRAP(x - 1, width), y);
             int midIdx = OFFSET(x, y);
             int rightIdx = OFFSET(BORDER_WRAP(x + 1, width), y);
@@ -46,17 +51,19 @@ void Gradient::apply(const cv::Mat& input, cv::Mat& output) {
         }
     }
 
-    //cv::Mat sobelX(height, width, CV_32FC1);
-    //cv::Mat sobelY(height, width, CV_32FC1);
-    //cv::Mat cvSobelX = sobelX.clone();
-    //cv::Mat cvSobelY = sobelY.clone();
+    // cv::Mat sobelX(height, width, CV_32FC1);
+    // cv::Mat sobelY(height, width, CV_32FC1);
+    // cv::Mat cvSobelX = sobelX.clone();
+    // cv::Mat cvSobelY = sobelY.clone();
 
     // vertical pass
-#ifdef _MSC_VER 
-#pragma loop(hint_parallel(4))
+#ifdef _MSC_VER
+#    pragma loop(hint_parallel(4))
 #endif
-    for (int x = 0; x < width; x++) {
-        for (int y = 0; y < height; y++) {
+    for(int x = 0; x < width; x++)
+    {
+        for(int y = 0; y < height; y++)
+        {
             int upIdx = OFFSET(x, BORDER_WRAP(y - 1, height));
             int midIdx = OFFSET(x, y);
             int downIdx = OFFSET(x, BORDER_WRAP(y + 1, height));
@@ -72,14 +79,14 @@ void Gradient::apply(const cv::Mat& input, cv::Mat& output) {
         }
     }
 
-    //cv::Sobel(input, cvSobelX, CV_32FC1, 1, 0);
-    //cv::Sobel(input, cvSobelY, CV_32FC1, 0, 1);
+    // cv::Sobel(input, cvSobelX, CV_32FC1, 1, 0);
+    // cv::Sobel(input, cvSobelY, CV_32FC1, 0, 1);
 
-    //cv::Mat diffX, diffY;
-    //cv::absdiff(sobelX, cvSobelX, diffX);
-    //cv::absdiff(sobelY, cvSobelY, diffY);
-    //double diff = cv::sum(diffX)[0];
-    //assert(diff == 0);
-    //diff = cv::sum(diffY)[0];
-    //assert(diff == 0);
+    // cv::Mat diffX, diffY;
+    // cv::absdiff(sobelX, cvSobelX, diffX);
+    // cv::absdiff(sobelY, cvSobelY, diffY);
+    // double diff = cv::sum(diffX)[0];
+    // assert(diff == 0);
+    // diff = cv::sum(diffY)[0];
+    // assert(diff == 0);
 }

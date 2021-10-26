@@ -11,4 +11,4 @@ project(cv-algos)
 
 add_subdirectory(core)
 add_subdirectory(primitives)
-#add_subdirectory(algorithms)
+add_subdirectory(algorithms)

@@ -3,7 +3,8 @@
 #include "core.h"
 #include <opencv2/core.hpp>
 
-class Hysteresis {
+class Hysteresis
+{
 private:
     float weakValue;
     float strongValue;

@@ -4,21 +4,25 @@
 #include <opencv2/highgui.hpp>
 #include <opencv2/imgproc.hpp>
 
-#include "gradient.h"
 #include "debug.h"
+#include "gradient.h"
 
-int main(int argc, char** argv) {
+int main(int argc, char** argv)
+{
     ::testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();
 }
 
-class GradientOpenCVComparisonTest {
+class GradientOpenCVComparisonTest
+{
 public:
-
-    cv::Mat squares(int width, int height) {
+    cv::Mat squares(int width, int height)
+    {
         cv::Mat out(height, width, CV_8UC1);
-        for (int y = 0; y < height; y++) {
-            for (int x = 0; x < width; x++) {
+        for(int y = 0; y < height; y++)
+        {
+            for(int x = 0; x < width; x++)
+            {
                 uchar value = ((x / 32 + y / 32) % 2 == 0) ? 255 : 0;
                 out.data[y * width + x] = value;
             }
@@ -26,12 +30,15 @@ public:
         return std::move(out);
     }
 
-    cv::Mat gradient(int width, int height) {
+    cv::Mat gradient(int width, int height)
+    {
         cv::Mat out(height, width, CV_8UC1);
         const int whalf = width / 2;
         const int hhalf = height / 2;
-        for (int y = 0; y < height; y++) {
-            for (int x = 0; x < width; x++) {
+        for(int y = 0; y < height; y++)
+        {
+            for(int x = 0; x < width; x++)
+            {
                 int xx = x >= whalf ? width - 1 - x : x;
                 int yy = y >= hhalf ? height - 1 - y : y;
                 uchar value = (uchar)(((xx % whalf) / (float)whalf) * 127 + ((yy % hhalf) / (float)hhalf) * 127);
@@ -41,8 +48,8 @@ public:
         return std::move(out);
     }
 
-
-    void check(cv::Mat& mag1, cv::Mat& mag2, cv::Mat& theta1, cv::Mat& theta2) {
+    void check(cv::Mat& mag1, cv::Mat& mag2, cv::Mat& theta1, cv::Mat& theta2)
+    {
         {
             cv::Mat diffMag;
             cv::absdiff(mag1, mag2, diffMag);
@@ -54,13 +61,15 @@ public:
             float maxDiffPerPix = 0;
             float epsilon = 255.f / 4;
             bool equals = std::all_of(diffMag.begin<float>(), diffMag.end<float>(), [&](float val) {
-                if (val > maxDiffPerPix) {
+                if(val > maxDiffPerPix)
+                {
                     maxDiffPerPix = val;
                 }
                 return val < epsilon;
-                });
+            });
             EXPECT_TRUE(equals);
-            std::cout << "avgDiffPerPix " << std::setw(10) << std::setprecision(5) << avgDiffPerPix << " maxDiffPerPix " << std::setw(5) << maxDiffPerPix << std::endl;
+            std::cout << "avgDiffPerPix " << std::setw(10) << std::setprecision(5) << avgDiffPerPix << " maxDiffPerPix "
+                      << std::setw(5) << maxDiffPerPix << std::endl;
         }
         {
             cv::Mat diffTheta;
@@ -73,17 +82,20 @@ public:
             float maxDiffPerPix = 0;
             float epsilon = 255.f / 4;
             bool equals = std::all_of(diffTheta.begin<float>(), diffTheta.end<float>(), [&](float val) {
-                if (val > maxDiffPerPix) {
+                if(val > maxDiffPerPix)
+                {
                     maxDiffPerPix = val;
                 }
                 return val < epsilon;
-                });
+            });
             EXPECT_TRUE(equals);
-            std::cout << "avgDiffPerPix " << std::setw(10) << std::setprecision(5) << avgDiffPerPix << " maxDiffPerPix " << std::setw(5) << maxDiffPerPix << std::endl;
+            std::cout << "avgDiffPerPix " << std::setw(10) << std::setprecision(5) << avgDiffPerPix << " maxDiffPerPix "
+                      << std::setw(5) << maxDiffPerPix << std::endl;
         }
     }
 
-    void generated(cv::Mat input) {
+    void generated(cv::Mat input)
+    {
         std::cout << "generated dims " << input.cols << "x" << input.rows << std::endl;
 
         cv::GaussianBlur(input, input, cv::Size(5, 5), 1.f);
@@ -101,14 +113,15 @@ public:
 
         splitChannels(tmp, mag2, theta2);
 
-        //cv::Mat out1u8, out2u8;
-        //cv::convertScaleAbs(mag, out2u8);
-        //cv::convertScaleAbs(out1, out1u8);
-        
+        // cv::Mat out1u8, out2u8;
+        // cv::convertScaleAbs(mag, out2u8);
+        // cv::convertScaleAbs(out1, out1u8);
+
         check(mag1, mag2, theta1, theta2);
     }
 
-    void picture(const std::string& name) {
+    void picture(const std::string& name)
+    {
 
         std::string filename = std::string(STR(DATA_ROOT)) + "/" + name;
         cv::Mat pic;
@@ -135,7 +148,8 @@ public:
     }
 };
 
-TEST(GradientTest, OpenCVComparison) {
+TEST(GradientTest, OpenCVComparison)
+{
     GradientOpenCVComparisonTest test;
     test.generated(test.gradient(64, 64));
     test.generated(test.gradient(10 * 4 * 32, 10 * 4 * 32));

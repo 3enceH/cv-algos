@@ -1,7 +1,7 @@
 #include "canny.h"
 
-#include <iostream>
 #include "debug.h"
+#include <iostream>
 
 Canny::Canny(float lowThreshold, float highThreshold)
 {
@@ -12,7 +12,8 @@ Canny::Canny(float lowThreshold, float highThreshold)
     hys = std::make_unique<Hysteresis>(lowThreshold, highThreshold);
 }
 
-void Canny::apply(const cv::Mat& input, cv::Mat& output) {
+void Canny::apply(const cv::Mat& input, cv::Mat& output)
+{
     PerformanceTimer perfTimer;
     perfTimer.start();
 
@@ -31,8 +32,8 @@ void Canny::apply(const cv::Mat& input, cv::Mat& output) {
     threshold->apply(gradients, gradients);
     perfTimer.tag("threshold");
 
-    //output = cv::Mat(gradients.rows, gradients.cols, CV_8UC1);
-    //cv::convertScaleAbs(gradients, output);
+    // output = cv::Mat(gradients.rows, gradients.cols, CV_8UC1);
+    // cv::convertScaleAbs(gradients, output);
 
     hys->apply(gradients, output);
     perfTimer.tag("hysteresis");

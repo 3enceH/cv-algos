@@ -1,43 +1,50 @@
-#include <gtest/gtest.h>
-#include <cstdlib>
-#include <cstring>
 #include <chrono>
 #include <cmath>
+#include <cstdlib>
+#include <cstring>
 #include <cuda_runtime.h>
+#include <gtest/gtest.h>
 
-inline cudaError_t cpu_malloc(void** devPtr, size_t size) {
+
+inline cudaError_t cpu_malloc(void** devPtr, size_t size)
+{
     *devPtr = malloc(size);
     return cudaSuccess;
 }
-inline cudaError_t cpu_free(void* devPtr) {
+inline cudaError_t cpu_free(void* devPtr)
+{
     free(devPtr);
     return cudaSuccess;
 }
 
-inline cudaError_t cpu_memcpy(void* dst, const void* src, size_t size, cudaMemcpyKind kind) {
+inline cudaError_t cpu_memcpy(void* dst, const void* src, size_t size, cudaMemcpyKind kind)
+{
     (void)kind;
     memcpy(dst, src, size);
     return cudaSuccess;
 }
 
-inline cudaError_t cpu_memset(void* devPtr, int value, size_t size) {
+inline cudaError_t cpu_memset(void* devPtr, int value, size_t size)
+{
     memset(devPtr, value, size);
     return cudaSuccess;
 }
 
 #define cudaMalloc cpu_malloc
-#define cudaFree cpu_free
+#define cudaFree   cpu_free
 #define cudaMemcpy cpu_memcpy
 #define cudaMemset cpu_memset
 
 #include "custd.h"
 
-int main(int argc, char** argv) {
+int main(int argc, char** argv)
+{
     ::testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();
 }
 
-struct Rect {
+struct Rect
+{
     float x, y;
 
     Rect(float x, float y) : x(x), y(y) {}
@@ -49,14 +56,17 @@ struct Rect {
     bool operator>(const Rect& other) { return !(*this <= other); }
 };
 
-std::ostream& operator<<(std::ostream& stream, const Rect& rect) {
+std::ostream& operator<<(std::ostream& stream, const Rect& rect)
+{
     stream << "Rect[" << rect.x << "," << rect.y << "]";
     return stream;
 }
 
-class CuStdVectorTest {
+class CuStdVectorTest
+{
 public:
-    void operator()() {
+    void operator()()
+    {
         {
 
             // simple arithmetic type vector
@@ -88,7 +98,8 @@ public:
             {
                 // erase till end
                 v.clear();
-                for (int i = 0; i < v.capacity(); i++) {
+                for(int i = 0; i < v.capacity(); i++)
+                {
                     v.push_back(i);
                 }
                 std::cout << v << std::endl;
@@ -102,7 +113,8 @@ public:
             {
                 // erase inner elements
                 v.clear();
-                for (int i = 0; i < v.capacity(); i++) {
+                for(int i = 0; i < v.capacity(); i++)
+                {
                     v.push_back(i);
                 }
                 std::cout << v << std::endl;
@@ -118,7 +130,8 @@ public:
             {
                 // erase from beginning
                 v.clear();
-                for (int i = 0; i < v.capacity(); i++) {
+                for(int i = 0; i < v.capacity(); i++)
+                {
                     v.push_back(i);
                 }
                 std::cout << v << std::endl;
@@ -132,7 +145,8 @@ public:
             {
                 // erase one element
                 v.clear();
-                for (int i = 0; i < v.capacity(); i++) {
+                for(int i = 0; i < v.capacity(); i++)
+                {
                     v.push_back(i);
                 }
                 std::cout << v << std::endl;
@@ -145,32 +159,36 @@ public:
             }
 
             {
-                //sorting fixed random
+                // sorting fixed random
                 v.clear();
-                for (int i = 0; i < v.capacity(); i++) {
+                for(int i = 0; i < v.capacity(); i++)
+                {
                     v.push_back(rand() % 100);
                 }
                 EXPECT_EQ(v.size(), v.capacity());
                 EXPECT_EQ(v.end() - v.begin(), v.capacity());
 
                 custd::sort(v.begin(), v.end());
-                for (int i = 1; i < v.size(); i++) {
+                for(int i = 1; i < v.size(); i++)
+                {
                     EXPECT_TRUE(v[i - 1] <= v[i]);
                 }
             }
 
             {
-                //sorting pseudo random
+                // sorting pseudo random
                 v.clear();
                 srand((unsigned)std::chrono::steady_clock::now().time_since_epoch().count());
-                for (int i = 0; i < v.capacity(); i++) {
+                for(int i = 0; i < v.capacity(); i++)
+                {
                     v.push_back(rand() % 100);
                 }
                 EXPECT_EQ(v.size(), v.capacity());
                 EXPECT_EQ(v.end() - v.begin(), v.capacity());
 
-                custd::sort(v.begin(), v.end());                
-                for (int i = 1; i < v.size(); i++) {
+                custd::sort(v.begin(), v.end());
+                for(int i = 1; i < v.size(); i++)
+                {
                     EXPECT_TRUE(v[i - 1] <= v[i]);
                 }
             }
@@ -180,7 +198,7 @@ public:
             custd::vector<Rect, 10> v;
             {
                 // push, pop one element, clear
-                v.push_back(Rect(1,1));
+                v.push_back(Rect(1, 1));
                 EXPECT_EQ(v.size(), 1);
                 EXPECT_EQ(v.end() - v.begin(), 1);
                 v.push_back(Rect(2, 2));
@@ -204,7 +222,8 @@ public:
             {
                 // erase till end
                 v.clear();
-                for (int i = 0; i < v.capacity(); i++) {
+                for(int i = 0; i < v.capacity(); i++)
+                {
                     v.push_back(Rect(i, i));
                 }
                 std::cout << v << std::endl;
@@ -218,7 +237,8 @@ public:
             {
                 // erase inner elements
                 v.clear();
-                for (int i = 0; i < v.capacity(); i++) {
+                for(int i = 0; i < v.capacity(); i++)
+                {
                     v.push_back(Rect(i, i));
                 }
                 std::cout << v << std::endl;
@@ -226,15 +246,16 @@ public:
                 std::cout << v << std::endl;
                 EXPECT_EQ(it, v.begin() + 2);
                 EXPECT_EQ(v.size(), 4);
-                EXPECT_TRUE(*(v.begin()) == Rect(0,0));
+                EXPECT_TRUE(*(v.begin()) == Rect(0, 0));
                 EXPECT_TRUE(*(v.end() - 1) == Rect(9, 9));
-                EXPECT_TRUE(*(v.begin() + 2) == Rect(8,8));
-                EXPECT_TRUE(*(v.end() - 3) == Rect(1,1));
+                EXPECT_TRUE(*(v.begin() + 2) == Rect(8, 8));
+                EXPECT_TRUE(*(v.end() - 3) == Rect(1, 1));
             }
             {
                 // erase from beginning
                 v.clear();
-                for (int i = 0; i < v.capacity(); i++) {
+                for(int i = 0; i < v.capacity(); i++)
+                {
                     v.push_back(Rect(i, i));
                 }
                 std::cout << v << std::endl;
@@ -248,7 +269,8 @@ public:
             {
                 // erase one element
                 v.clear();
-                for (int i = 0; i < v.capacity(); i++) {
+                for(int i = 0; i < v.capacity(); i++)
+                {
                     v.push_back(Rect(i, i));
                 }
                 std::cout << v << std::endl;
@@ -262,14 +284,16 @@ public:
 
             {
                 v.clear();
-                for (int i = 0; i < v.capacity(); i++) {
-                    v.push_back({ (float)(rand() % 100), (float)(rand() % 100) });
+                for(int i = 0; i < v.capacity(); i++)
+                {
+                    v.push_back({(float)(rand() % 100), (float)(rand() % 100)});
                 }
                 EXPECT_EQ(v.size(), v.capacity());
                 EXPECT_EQ(v.end() - v.begin(), v.capacity());
 
                 custd::sort(v.begin(), v.end());
-                for (int i = 1; i < v.size(); i++) {
+                for(int i = 1; i < v.size(); i++)
+                {
                     EXPECT_TRUE(v[i - 1] <= v[i]);
                 }
             }
@@ -277,14 +301,16 @@ public:
             {
                 v.clear();
                 srand((unsigned)std::chrono::steady_clock::now().time_since_epoch().count());
-                for (int i = 0; i < v.capacity(); i++) {
-                    v.push_back({ (float)(rand() % 100), (float)(rand() % 100) });
+                for(int i = 0; i < v.capacity(); i++)
+                {
+                    v.push_back({(float)(rand() % 100), (float)(rand() % 100)});
                 }
                 EXPECT_EQ(v.size(), v.capacity());
                 EXPECT_EQ(v.end() - v.begin(), v.capacity());
 
                 custd::sort(v.begin(), v.end());
-                for (int i = 1; i < v.size(); i++) {
+                for(int i = 1; i < v.size(); i++)
+                {
                     EXPECT_TRUE(v[i - 1] <= v[i]);
                 }
             }
@@ -292,11 +318,13 @@ public:
     }
 };
 
-class CuStdMapTest {
+class CuStdMapTest
+{
 public:
-    void operator()() {
+    void operator()()
+    {
         {
-            // simple arithmetic value type 
+            // simple arithmetic value type
             custd::map<int, float, 10> m;
 
             m[0] = 0;
@@ -321,7 +349,8 @@ public:
             {
                 // erase till end
                 m.clear();
-                for (int i = 0; i < m.capacity(); i++) {
+                for(int i = 0; i < m.capacity(); i++)
+                {
                     m[i] = (float)i;
                 }
                 std::cout << m << std::endl;
@@ -335,7 +364,8 @@ public:
             {
                 // erase inner elements
                 m.clear();
-                for (int i = 0; i < m.capacity(); i++) {
+                for(int i = 0; i < m.capacity(); i++)
+                {
                     m[i] = (float)i;
                 }
                 std::cout << m << std::endl;
@@ -351,7 +381,8 @@ public:
             {
                 // erase from beginning
                 m.clear();
-                for (int i = 0; i < m.capacity(); i++) {
+                for(int i = 0; i < m.capacity(); i++)
+                {
                     m[i] = (float)i;
                 }
                 std::cout << m << std::endl;
@@ -365,7 +396,8 @@ public:
             {
                 // erase one element
                 m.clear();
-                for (int i = 0; i < m.capacity(); i++) {
+                for(int i = 0; i < m.capacity(); i++)
+                {
                     m[i] = (float)i;
                 }
                 std::cout << m << std::endl;
@@ -378,14 +410,16 @@ public:
             }
             {
                 m.clear();
-                for (int i = 0; i < m.capacity(); i++) {
+                for(int i = 0; i < m.capacity(); i++)
+                {
                     m[(rand() % 1000)] = (rand() % 100) / 3.14f;
                 }
                 EXPECT_EQ(m.size(), m.capacity());
                 EXPECT_EQ(m.end() - m.begin(), m.capacity());
 
                 std::cout << m << std::endl;
-                for (auto it = m.begin() + 1; it != m.end(); ++it) {
+                for(auto it = m.begin() + 1; it != m.end(); ++it)
+                {
                     EXPECT_TRUE(*(it - 1) <= *it);
                 }
             }
@@ -393,21 +427,23 @@ public:
             {
                 m.clear();
                 srand((unsigned)std::chrono::steady_clock::now().time_since_epoch().count());
-                for (int i = 0; i < m.capacity(); i++) {
+                for(int i = 0; i < m.capacity(); i++)
+                {
                     m[(rand() % 1000)] = (rand() % 100) / 3.14f;
                 }
                 EXPECT_EQ(m.size(), m.capacity());
                 EXPECT_EQ(m.end() - m.begin(), m.capacity());
 
                 std::cout << m << std::endl;
-                for (auto it = m.begin() + 1; it != m.end(); ++it) {
+                for(auto it = m.begin() + 1; it != m.end(); ++it)
+                {
                     EXPECT_TRUE(*(it - 1) <= *it);
                 }
             }
         }
-      
+
         {
-            // container value type 
+            // container value type
             custd::map<int, custd::vector<int, 10>, 10> m;
         }
         //{
@@ -453,13 +489,14 @@ public:
     }
 };
 
-TEST(CuStd, vector) {
+TEST(CuStd, vector)
+{
     CuStdVectorTest test;
     test();
 }
 
-TEST(CuStd, map) {
+TEST(CuStd, map)
+{
     CuStdMapTest test;
     test();
 }
-

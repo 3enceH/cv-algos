@@ -4,7 +4,8 @@
 
 #include "core.h"
 
-class GaussianBase {
+class GaussianBase
+{
 protected:
     std::vector<float> _kernel;
     int _size;
@@ -19,7 +20,8 @@ public:
     virtual void EXPORT apply(const cv::Mat& input, cv::Mat& output) = 0;
 };
 
-class Gaussian : public GaussianBase {
+class Gaussian : public GaussianBase
+{
 private:
     cv::Mat buffer;
 

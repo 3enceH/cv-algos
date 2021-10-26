@@ -1,18 +1,14 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.8 FATAL_ERROR)
 
 set(LIB_NAME "algorithms")
 set(PROJECT_NAME "${GLOBAL_PROJECT_NAME}_${LIB_NAME}")
 
-project(${PROJECT_NAME} LANGUAGES CXX CUDA)
-
-find_package(OpenCV 4.3.0 REQUIRED COMPONENTS highgui)
-#find_package(CUDA 11.0 REQUIRED)
+project(${PROJECT_NAME} LANGUAGES CXX)
 
 add_library(${PROJECT_NAME} SHARED
     include/canny.h
 
     src/canny.cpp
-    #src/canny_test.cpp
 )
 
 set_target_properties(${PROJECT_NAME} PROPERTIES CUDA_SEPARABLE_COMPILATION ON)
@@ -28,11 +24,7 @@ target_include_directories(${PROJECT_NAME}
 )
 
 target_link_libraries(${PROJECT_NAME}
-    PRIVATE
-        opencv_core
-        opencv_highgui
-
-        cva_core
+    PUBLIC
         cva_primitives
 )
 

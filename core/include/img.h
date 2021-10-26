@@ -1,25 +1,29 @@
-#pragma once 
+#pragma once
 
-#include <vector>
-#include <string>
-#include <ostream>
 #include <iomanip>
+#include <ostream>
+#include <string>
+#include <vector>
+
 
 #include "core.h"
 
-enum class ImgType {
+enum class ImgType
+{
     Undefined,
     UInt8,
     Int32,
     Float32
 };
 
-enum class ImgStoringMethod {
+enum class ImgStoringMethod
+{
     RowMajor,
     ColMajor
 };
 
-class Img {
+class Img
+{
 public:
     EXPORT Img();
     EXPORT Img(int width, int height, ImgType type, int channels = 1);
@@ -39,13 +43,11 @@ public:
     int height;
     ImgType type;
 
-    template<typename T = uint8_t*>
-    const T* data() const { return (T*)_data; }
-    template<typename T = uint8_t*>
-    T* data() { return (T*)_data; }
+    template<typename T = uint8_t*> const T* data() const { return (T*)_data; }
+    template<typename T = uint8_t*> T* data() { return (T*)_data; }
 
     bool EXPORT isEmpty() const;
-    bool EXPORT isWrapped()const;
+    bool EXPORT isWrapped() const;
 
     size_t EXPORT elemSize() const;
 
@@ -56,12 +58,13 @@ private:
     std::vector<uint8_t> _buffer;
 };
 
-std::ostream& operator<<(std::ostream& stream, const Img& img) {
+std::ostream& operator<<(std::ostream& stream, const Img& img)
+{
     stream << "Img { ";
     stream << &img << ", ";
     stream << img.width << "x" << img.height << "x" << img.channels << ", ";
 
-    switch (img.type)
+    switch(img.type)
     {
     case ImgType::UInt8:
         stream << "UInt8";

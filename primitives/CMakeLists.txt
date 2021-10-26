@@ -5,7 +5,7 @@ set(PROJECT_NAME "${GLOBAL_PROJECT_NAME}_${LIB_NAME}")
 
 project(${PROJECT_NAME} LANGUAGES CXX CUDA)
 
-find_package(OpenCV 4.3.0 REQUIRED COMPONENTS core)
+find_package(OpenCV 4.3 REQUIRED COMPONENTS core)
 
 add_library(${PROJECT_NAME} SHARED
     include/primitives.h
@@ -43,9 +43,7 @@ target_include_directories(${PROJECT_NAME}
 target_link_libraries(${PROJECT_NAME}
     PUBLIC
         opencv_core
-        opencv_imgproc
-
-    PRIVATE
+        
         cva_core
 )
 

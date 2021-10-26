@@ -7,12 +7,14 @@
 #include "canny.h"
 #include "debug.h"
 
-int main(int argc, char** argv) {
+int main(int argc, char** argv)
+{
     ::testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();
 }
 
-void check(cv::Mat& out1, cv::Mat& out2) {
+void check(cv::Mat& out1, cv::Mat& out2)
+{
     cv::Mat diffImg;
     cv::absdiff(out1, out2, diffImg);
 
@@ -22,19 +24,24 @@ void check(cv::Mat& out1, cv::Mat& out2) {
     int maxDiff = 0;
     int epsilon = 3;
     bool equals = std::all_of(diffImg.begin<uchar>(), diffImg.end<uchar>(), [&](uchar val) {
-        if (val > maxDiff) {
+        if(val > maxDiff)
+        {
             maxDiff = val;
         }
         return val < epsilon;
-        });
+    });
     EXPECT_TRUE(equals);
-    std::cout << "avgDiffPerPix " << std::setw(10) << std::setprecision(5) << avgDiffPerPix << " maxDiff " << std::setw(5) << maxDiff << std::endl;
+    std::cout << "avgDiffPerPix " << std::setw(10) << std::setprecision(5) << avgDiffPerPix << " maxDiff "
+              << std::setw(5) << maxDiff << std::endl;
 }
 
-cv::Mat squares(int width, int height) {
+cv::Mat squares(int width, int height)
+{
     cv::Mat out(height, width, CV_8UC1);
-    for (int y = 0; y < height; y++) {
-        for (int x = 0; x < width; x++) {
+    for(int y = 0; y < height; y++)
+    {
+        for(int x = 0; x < width; x++)
+        {
             uchar value = ((x / 32 + y / 32) % 2 == 0) ? 255 : 0;
             out.data[y * width + x] = value;
         }
@@ -42,12 +49,15 @@ cv::Mat squares(int width, int height) {
     return std::move(out);
 }
 
-cv::Mat gradient(int width, int height) {
+cv::Mat gradient(int width, int height)
+{
     cv::Mat out(height, width, CV_8UC1);
     const int whalf = width / 2;
     const int hhalf = height / 2;
-    for (int y = 0; y < height; y++) {
-        for (int x = 0; x < width; x++) {
+    for(int y = 0; y < height; y++)
+    {
+        for(int x = 0; x < width; x++)
+        {
             int xx = x >= whalf ? width - 1 - x : x;
             int yy = y >= hhalf ? height - 1 - y : y;
             uchar value = (uchar)(((xx % whalf) / (float)whalf) * 127 + ((yy % hhalf) / (float)hhalf) * 127);
@@ -57,9 +67,11 @@ cv::Mat gradient(int width, int height) {
     return std::move(out);
 }
 
-class GradientOpenCVComparisonTest {
+class GradientOpenCVComparisonTest
+{
 public:
-    void generated(cv::Mat& input) {
+    void generated(const cv::Mat& input)
+    {
 
         cv::Mat out1, out2;
 
@@ -70,14 +82,15 @@ public:
         Canny canny(threshold1, threshold2);
         canny.apply(input, out2);
 
-        //cv::Mat out1u8, out2u8;
-        //cv::convertScaleAbs(mag, out2u8);
-        //cv::convertScaleAbs(out1, out1u8);
+        // cv::Mat out1u8, out2u8;
+        // cv::convertScaleAbs(mag, out2u8);
+        // cv::convertScaleAbs(out1, out1u8);
 
         check(out1, out2);
     }
 
-    void picture(const std::string& name) {
+    void picture(const std::string& name)
+    {
 
         std::string filename = std::string(STR(DATA_ROOT)) + "/" + name;
         cv::Mat pic = cv::imread(filename), grey;
@@ -92,9 +105,9 @@ public:
         Canny canny(low, high);
         canny.apply(grey, out2);
 
-        //cv::Mat out1u8, out2u8;
-        //cv::convertScaleAbs(mag, out2u8);
-        //cv::convertScaleAbs(out1, out1u8);
+        // cv::Mat out1u8, out2u8;
+        // cv::convertScaleAbs(mag, out2u8);
+        // cv::convertScaleAbs(out1, out1u8);
 
         cv::Mat lines;
         joinChannels(grey, out2, lines);
@@ -103,7 +116,8 @@ public:
     }
 };
 
-TEST(GradientTest, OpenCVComparison) {
+TEST(GradientTest, OpenCVComparison)
+{
     GradientOpenCVComparisonTest test;
     test.generated(squares(64, 64));
     test.generated(squares(10 * 4 * 32, 10 * 4 * 32));

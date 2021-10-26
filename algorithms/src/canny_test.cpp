@@ -1,19 +1,23 @@
-#include <string>
 #include <iostream>
 #include <opencv2/highgui.hpp>
 #include <opencv2/imgproc.hpp>
+#include <string>
 
-#include "primitives.h"
+
 #include "debug.h"
+#include "primitives.h"
+
 
 #include "img.h"
 
-template<class T>
-std::ostream& operator <<(std::ostream& s, const std::vector<T>& v) {
+template<class T> std::ostream& operator<<(std::ostream& s, const std::vector<T>& v)
+{
     s << "(";
-    for (unsigned int i = 0; i < v.size(); i++) {
+    for(unsigned int i = 0; i < v.size(); i++)
+    {
         s << v[i];
-        if (i != v.size() - 1)  s << ",";
+        if(i != v.size() - 1)
+            s << ",";
     }
     s << ")";
     return s;
@@ -35,7 +39,8 @@ void calculate();
 
 int main(int arc, char** argc)
 {
-    try {
+    try
+    {
         gaussFilter = std::make_unique<GaussianFilterCUDA>(7, 1.5f);
         sobelFilter = std::make_unique<Gradient>();
         nonMaxSupressor = std::make_unique<NonMaxSupress>();
@@ -52,7 +57,8 @@ int main(int arc, char** argc)
         sobelFilter.reset();
         gaussFilter.reset();
     }
-    catch (std::exception& e) {
+    catch(std::exception& e)
+    {
         std::cerr << e.what() << std::endl;
         return -1;
     }
@@ -60,7 +66,8 @@ int main(int arc, char** argc)
     return 0;
 }
 
-void image() {
+void image()
+{
     std::string filename = "c:\\Users\\Bence\\Downloads\\RbLtUqIP_o.jpg";
 
     colorFrame = cv::imread(filename);
@@ -71,7 +78,7 @@ void image() {
 
     Img img(512, 256, ImgType::UInt8, 3);
     Img img2(512, 256, ImgType::Float32, 3);
-    Img img3(greyFrameInput.data, width, height,ImgType::UInt8);
+    Img img3(greyFrameInput.data, width, height, ImgType::UInt8);
     std::cout << img << std::endl;
     std::cout << img2 << std::endl;
     std::cout << img3 << std::endl;
@@ -87,24 +94,26 @@ void image() {
     }
 }
 
-void videoPlay(int skipFrames) {
+void videoPlay(int skipFrames)
+{
     std::string filename = "d:\\Downloads\\The.Big.Short.2015.BDRiP.x264.HuN-HyperX\\thebigshort-sd-hyperx.mkv";
-    
+
     cv::VideoCapture capture(filename);
     assert(capture.isOpened());
     capture >> colorFrame;
-    
+
     int width = colorFrame.cols;
     int height = colorFrame.rows;
     greyFrameInput = cv::Mat(width, height, CV_8UC1);
-    
-    for(int i = 0; i < skipFrames - 1; i++)  capture >> colorFrame;
+
+    for(int i = 0; i < skipFrames - 1; i++)
+        capture >> colorFrame;
 
     cv::namedWindow("w", 1);
-    for (;;)
+    for(;;)
     {
         capture >> colorFrame;
-        if (colorFrame.empty())
+        if(colorFrame.empty())
             break;
 
         cv::cvtColor(colorFrame, greyFrameInput, cv::COLOR_RGB2GRAY);
@@ -117,7 +126,8 @@ void videoPlay(int skipFrames) {
     }
 }
 
-void calculate() {
+void calculate()
+{
 
     PerformanceTimer timer;
     timer.start();
@@ -147,8 +157,7 @@ void calculate() {
     labelsToColored(labels, colored);
 
     printf("");
-    //std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
-    //auto time = std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count();
-    //std::cout  << time << " ms" << std::endl;
+    // std::chrono::steady_clock::time_point end = std::chrono::steady_clock::now();
+    // auto time = std::chrono::duration_cast<std::chrono::milliseconds>(end - begin).count();
+    // std::cout  << time << " ms" << std::endl;
 }
-

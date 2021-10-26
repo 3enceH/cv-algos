@@ -7,12 +7,14 @@
 #include "ccl.h"
 #include "debug.h"
 
-int main(int argc, char** argv) {
+int main(int argc, char** argv)
+{
     ::testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();
 }
 
-cv::Mat generateBlobs(int width, int height) {
+cv::Mat generateBlobs(int width, int height)
+{
     std::default_random_engine gen;
     std::uniform_int_distribution<int> distX(0, width - 1);
     std::uniform_int_distribution<int> distY(0, height - 1);
@@ -20,13 +22,17 @@ cv::Mat generateBlobs(int width, int height) {
 
     cv::Mat blobs(height, width, CV_32FC1, cv::Scalar(0));
 
-    for (int i = 1; i <= 10; i++) {
+    for(int i = 1; i <= 10; i++)
+    {
         int cx = distX(gen);
         int cy = distY(gen);
         int r = radius(gen);
-        for (int y = 0; y < height; y++) {
-            for (int x = 0; x < width; x++) {
-                if (r > (int)std::hypot(cx - x, cy - y)) {
+        for(int y = 0; y < height; y++)
+        {
+            for(int x = 0; x < width; x++)
+            {
+                if(r > (int)std::hypot(cx - x, cy - y))
+                {
                     ((float*)blobs.data)[y * width + x] = (float)10 * i;
                 }
             }
@@ -35,9 +41,11 @@ cv::Mat generateBlobs(int width, int height) {
     return std::move(blobs);
 }
 
-class CCLabelingAlgorithmicTest {
+class CCLabelingAlgorithmicTest
+{
 public:
-    void operator()(int width, int height) {
+    void operator()(int width, int height)
+    {
         CCL cclabeling;
         cv::Mat black(height, width, CV_32FC1, cv::Scalar(0));
         cv::Mat blackOut(height, width, CV_32SC1);
@@ -49,7 +57,7 @@ public:
 
         cv::Mat blobs = generateBlobs(width, height);
         cv::Mat blobsOut(height, width, CV_32SC1);
-        
+
         cclabeling.apply(blobs, blobsOut);
         const float* const values = (float*)blobs.data;
         const int* const labels = (int*)blobsOut.data;
@@ -63,15 +71,19 @@ public:
 
         std::map<int, float> mappedValues;
         bool ok = true;
-        for (int y = 0; y < height; y++) {
-            for (int x = 0; x < width; x++) {
+        for(int y = 0; y < height; y++)
+        {
+            for(int x = 0; x < width; x++)
+            {
                 const float& value = values[OFFSET_ROW_MAJOR(x, y, width, 1)];
                 const int& label = labels[OFFSET_ROW_MAJOR(x, y, width, 1)];
-                if (mappedValues.find(labels[OFFSET_ROW_MAJOR(x, y, width, 1)]) == mappedValues.end()) {
+                if(mappedValues.find(labels[OFFSET_ROW_MAJOR(x, y, width, 1)]) == mappedValues.end())
+                {
                     mappedValues[label] = value;
                     continue;
                 }
-                if (mappedValues[label] != value) {
+                if(mappedValues[label] != value)
+                {
                     ok = false;
                     break;
                 }
@@ -81,7 +93,8 @@ public:
     }
 };
 
-TEST(CCLabelingTest, Precomputed) {
+TEST(CCLabelingTest, Precomputed)
+{
     CCLabelingAlgorithmicTest test;
     test(4 * 4, 3 * 4);
     test(4 * 4 * 4, 3 * 4 * 4);

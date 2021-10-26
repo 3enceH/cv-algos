@@ -3,13 +3,16 @@
 #include "core.h"
 #include <opencv2/core.hpp>
 
-class Threshold {
+class Threshold
+{
 private:
     float lowThreshold;
     float highThreshold;
 
 public:
-    EXPORT Threshold(float lowThreshold, float highThreshold) : lowThreshold(lowThreshold), highThreshold(highThreshold) {}
+    EXPORT Threshold(float lowThreshold, float highThreshold) : lowThreshold(lowThreshold), highThreshold(highThreshold)
+    {
+    }
     EXPORT Threshold(float threshold) : highThreshold(threshold), lowThreshold(threshold) {}
 
     // input, output: CV_32FC1

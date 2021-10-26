@@ -3,7 +3,8 @@
 #include "core.h"
 #include <opencv2/core.hpp>
 
-class Gradient {
+class Gradient
+{
 private:
     cv::Mat bufferX, bufferY;
 

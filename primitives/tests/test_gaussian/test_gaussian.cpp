@@ -1,21 +1,26 @@
 #include <numeric>
 
-#include <gtest/gtest.h>
-#include "gaussian.h"
 #include "cuda_gaussian.cuh"
 #include "debug.h"
+#include "gaussian.h"
+#include <gtest/gtest.h>
 #include <opencv2/highgui.hpp>
 #include <opencv2/imgproc.hpp>
 
-int main(int argc, char** argv) {
+
+int main(int argc, char** argv)
+{
     ::testing::InitGoogleTest(&argc, argv);
     return RUN_ALL_TESTS();
 }
 
-cv::Mat getSquares(int width, int height) {
+cv::Mat getSquares(int width, int height)
+{
     cv::Mat squares(height, width, CV_8UC1);
-    for (int y = 0; y < height; y++) {
-        for (int x = 0; x < width; x++) {
+    for(int y = 0; y < height; y++)
+    {
+        for(int x = 0; x < width; x++)
+        {
             uchar value = ((x / (width / 4) + y / (height / 4)) % 2 == 0) ? 255 : 0;
             squares.data[y * width + x] = value;
         }
@@ -23,7 +28,8 @@ cv::Mat getSquares(int width, int height) {
     return std::move(squares);
 }
 
-void check(cv::Mat& out1, cv::Mat& out2) {
+void check(cv::Mat& out1, cv::Mat& out2)
+{
     cv::Mat diffImg;
     cv::absdiff(out1, out2, diffImg);
 
@@ -33,18 +39,22 @@ void check(cv::Mat& out1, cv::Mat& out2) {
     int maxDiff = 0;
     int epsilon = 3;
     bool equals = std::all_of(diffImg.begin<uchar>(), diffImg.end<uchar>(), [&](uchar val) {
-        if (val > maxDiff) {
+        if(val > maxDiff)
+        {
             maxDiff = val;
         }
         return val < epsilon;
-        });
+    });
     EXPECT_TRUE(equals);
-    std::cout << "avgDiffPerPix " << std::setw(10) << std::setprecision(5) << avgDiffPerPix << " maxDiff " << std::setw(5) << maxDiff << std::endl;
+    std::cout << "avgDiffPerPix " << std::setw(10) << std::setprecision(5) << avgDiffPerPix << " maxDiff "
+              << std::setw(5) << maxDiff << std::endl;
 }
 
-class GaussianFilterAlgorithmicTest {
+class GaussianFilterAlgorithmicTest
+{
 public:
-    void operator()(Gaussian filter, int width, int height) {
+    void operator()(Gaussian filter, int width, int height)
+    {
         // kernel initialized correctly ?
         auto& kernel = filter.kernel();
 
@@ -69,9 +79,11 @@ public:
     }
 };
 
-class GaussianFilterCUDAComparisonTest {
+class GaussianFilterCUDAComparisonTest
+{
 public:
-    void operator()(int width, int height, int size, float sigma = 1.f) {
+    void operator()(int width, int height, int size, float sigma = 1.f)
+    {
         std::cout << "generated dims " << width << "x" << height << " size " << size << " sigma " << sigma << std::endl;
 
         cv::Mat squares = getSquares(width, height);
@@ -84,23 +96,24 @@ public:
 
         PerformanceTimer perfTimer;
         perfTimer.start();
-        
+
         cpuFilter.apply(squares, out1);
         perfTimer.tag("cpu");
-        
+
         gpuFilter.apply(squares, out2);
         perfTimer.tag("gpu");
-        
+
         std::cout << perfTimer.summary();
 
         check(out1, out2);
     }
 };
 
-
-class GaussianFilterOpenCVComparisonTest {
+class GaussianFilterOpenCVComparisonTest
+{
 public:
-    void generated(int width, int height, int size, float sigma = 1.f) {
+    void generated(int width, int height, int size, float sigma = 1.f)
+    {
         std::cout << "generated dims " << width << "x" << height << " size " << size << " sigma " << sigma << std::endl;
 
         cv::Mat squares = getSquares(width, height);
@@ -115,7 +128,7 @@ public:
 
         cv::GaussianBlur(squares, out1, cv::Size(size, size), sigma);
         perfTimer.tag("opencv");
-        
+
         gpuFilter1.apply(squares, out2);
         perfTimer.tag("gpu");
 
@@ -124,7 +137,8 @@ public:
         check(out1, out2);
     }
 
-    void picture(const std::string& name, int size, float sigma = 1.f) {
+    void picture(const std::string& name, int size, float sigma = 1.f)
+    {
 
         std::string filename = std::string(STR(DATA_ROOT)) + "/" + name;
         cv::Mat pic;
@@ -132,7 +146,8 @@ public:
 
         int width = pic.cols;
         int height = pic.rows;
-        std::cout << "pic " << filename << " dims " << width << "x" << height << " size " << size << " sigma " << sigma << std::endl;
+        std::cout << "pic " << filename << " dims " << width << "x" << height << " size " << size << " sigma " << sigma
+                  << std::endl;
 
         cv::Mat out1, out2;
 
@@ -153,14 +168,16 @@ public:
     }
 };
 
-TEST(GaussianFilterTest, Precomputed) {
+TEST(GaussianFilterTest, Precomputed)
+{
     GaussianFilterAlgorithmicTest test;
     test(Gaussian(3, 1.f), 32, 32);
     test(Gaussian(5, 3.f), 32, 32);
     test(Gaussian(7, 5.f), 32, 32);
 }
 
-TEST(GaussianFilterTest, CUDAComparison) {
+TEST(GaussianFilterTest, CUDAComparison)
+{
     GaussianFilterCUDAComparisonTest test;
     test(32, 32, 5, 1.f);
     test(10 * 4 * 32, 10 * 4 * 32, 5, 1.f);
@@ -168,7 +185,8 @@ TEST(GaussianFilterTest, CUDAComparison) {
     test(4096, 2160, 10, 1.f);
 }
 
-TEST(GaussianFilterTest, OpenCVComparison) {
+TEST(GaussianFilterTest, OpenCVComparison)
+{
     GaussianFilterOpenCVComparisonTest test;
     test.generated(32, 32, 5, 1.f);
     test.generated(10 * 4 * 32, 10 * 4 * 32, 10, 1.f);
